@@ -60,6 +60,13 @@ export interface ProdutoInput {
   estiloId: string;
 }
 
+export interface Banner {
+  id: string;
+  imagemUrl: string;
+  ordem: number;
+  ativo: boolean;
+}
+
 export interface PaginatedResult<T> {
   items: T[];
   total: number;

@@ -6,6 +6,7 @@ import { ZodError } from 'zod';
 import { env } from './config/env';
 import { HttpError } from './lib/http-error';
 import authRoutes from './modules/auth/routes';
+import bannersRoutes from './modules/banners/routes';
 import categoriasRoutes from './modules/categorias/routes';
 import estilosRoutes from './modules/estilos/routes';
 import formatosRoutes from './modules/formatos/routes';
@@ -40,6 +41,7 @@ export function buildApp() {
   app.register(
     async (api) => {
       api.register(authRoutes, { prefix: '/auth' });
+      api.register(bannersRoutes);
       api.register(categoriasRoutes);
       api.register(formatosRoutes);
       api.register(estilosRoutes);

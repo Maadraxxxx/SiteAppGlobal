@@ -106,6 +106,17 @@ model Estilo {
   @@map("estilos")
 }
 
+model Banner {
+  id        String   @id @default(uuid())
+  imagemUrl String
+  ordem     Int      @default(0)
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("banners")
+}
+
 model Produto {
   id        String   @id @default(uuid())
   nome      String

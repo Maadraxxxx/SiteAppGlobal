@@ -3,7 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
-import { uploadProdutoImagem } from '@/api/uploads';
+import { uploadImagem } from '@/api/uploads';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { ThemedText } from './themed-text';
@@ -11,12 +11,17 @@ import { ThemedText } from './themed-text';
 interface Props {
   value?: string;
   onChange: (url: string | undefined) => void;
+  /** proporção largura x altura do recorte — padrão quadrado (fotos de produto) */
+  aspect?: [number, number];
+  boxWidth?: number;
+  boxHeight?: number;
 }
 
-export function ProdutoImagePicker({ value, onChange }: Props) {
+export function ImageUploadField({ value, onChange, aspect = [1, 1], boxWidth = 160, boxHeight }: Props) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string>();
   const theme = useTheme();
+  const height = boxHeight ?? (boxWidth * aspect[1]) / aspect[0];
 
   async function handlePick() {
     setError(undefined);
@@ -30,7 +35,7 @@ export function ProdutoImagePicker({ value, onChange }: Props) {
     const result = await ImagePicker.launchImageLibraryAsync({
       quality: 0.8,
       allowsEditing: true,
-      aspect: [1, 1],
+      aspect,
     });
 
     if (result.canceled || !result.assets[0]) return;
@@ -38,9 +43,9 @@ export function ProdutoImagePicker({ value, onChange }: Props) {
     const asset = result.assets[0];
     setUploading(true);
     try {
-      const filename = asset.fileName ?? `produto-${Date.now()}.jpg`;
+      const filename = asset.fileName ?? `imagem-${Date.now()}.jpg`;
       const mimeType = asset.mimeType ?? 'image/jpeg';
-      const url = await uploadProdutoImagem(asset.uri, filename, mimeType);
+      const url = await uploadImagem(asset.uri, filename, mimeType);
       onChange(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao enviar imagem');
@@ -54,7 +59,10 @@ export function ProdutoImagePicker({ value, onChange }: Props) {
       <Pressable
         onPress={handlePick}
         disabled={uploading}
-        style={[styles.box, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+        style={[
+          styles.box,
+          { width: boxWidth, height, backgroundColor: theme.backgroundElement, borderColor: theme.border },
+        ]}>
         {uploading ? (
           <ActivityIndicator color={theme.primary} />
         ) : value ? (
@@ -100,8 +108,6 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   box: {
-    width: 160,
-    height: 160,
     borderRadius: Radius.medium,
     borderWidth: 1,
     borderStyle: 'dashed',

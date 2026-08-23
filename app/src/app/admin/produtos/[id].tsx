@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { FormSection } from '@/components/FormSection';
-import { ProdutoImagePicker } from '@/components/ProdutoImagePicker';
+import { ImageUploadField } from '@/components/ImageUploadField';
 import { Screen } from '@/components/Screen';
 import { TagSelector } from '@/components/TagSelector';
 import { TextField } from '@/components/TextField';
@@ -127,7 +127,7 @@ export default function AdminProdutoFormScreen() {
       </FormSection>
 
       <FormSection title="Imagem">
-        <ProdutoImagePicker value={imagemUrl} onChange={setImagemUrl} />
+        <ImageUploadField value={imagemUrl} onChange={setImagemUrl} />
       </FormSection>
 
       <FormSection title="Classificação">

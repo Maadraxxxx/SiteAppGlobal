@@ -9,6 +9,7 @@ import { useTheme } from '@/hooks/use-theme';
 const LINKS = [
   { href: '/admin/categorias', label: 'Categorias', icon: 'folder' as const },
   { href: '/admin/produtos', label: 'Produtos', icon: 'cube' as const },
+  { href: '/admin/banners', label: 'Carrossel', icon: 'images' as const },
 ];
 
 export default function AdminDashboard() {
