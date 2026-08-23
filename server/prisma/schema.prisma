@@ -1,0 +1,219 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  CLIENTE
+  ADMIN
+}
+
+enum TamanhoKit {
+  P
+  M
+  G
+}
+
+enum StatusKit {
+  RASCUNHO
+  AGUARDANDO_PAGAMENTO
+  CONFIRMADO
+}
+
+enum StatusPedido {
+  AGUARDANDO_PAGAMENTO
+  PAGO
+  EM_PRODUCAO
+  ENVIADO
+  CONCLUIDO
+  CANCELADO
+}
+
+enum TipoItemPedido {
+  PRODUTO
+  KIT_CUSTOMIZADO
+}
+
+enum MetodoPagamento {
+  PIX
+  CARTAO
+}
+
+enum StatusPagamento {
+  PENDENTE
+  APROVADO
+  REJEITADO
+  CANCELADO
+  ESTORNADO
+}
+
+model Usuario {
+  id        String   @id @default(uuid())
+  nome      String
+  email     String   @unique
+  senhaHash String
+  role      Role     @default(CLIENTE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pedidos          Pedido[]
+  kitsCustomizados KitCustomizado[]
+
+  @@map("usuarios")
+}
+
+model Categoria {
+  id        String   @id @default(uuid())
+  nome      String   @unique
+  slug      String   @unique
+  descricao String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  produtos Produto[]
+
+  @@map("categorias")
+}
+
+model Formato {
+  id        String   @id @default(uuid())
+  nome      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  produtos         Produto[]
+  kitsCustomizados KitCustomizado[]
+
+  @@map("formatos")
+}
+
+model Estilo {
+  id        String   @id @default(uuid())
+  nome      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  produtos         Produto[]
+  kitsCustomizados KitCustomizado[]
+
+  @@map("estilos")
+}
+
+model Produto {
+  id        String   @id @default(uuid())
+  nome      String
+  descricao String?
+  preco     Decimal  @db.Decimal(10, 2)
+  medidas   String?
+  peso      Decimal? @db.Decimal(10, 3)
+  imagemUrl String?
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  categoriaId String
+  categoria   Categoria @relation(fields: [categoriaId], references: [id])
+
+  formatoId String
+  formato   Formato @relation(fields: [formatoId], references: [id])
+
+  estiloId String
+  estilo   Estilo @relation(fields: [estiloId], references: [id])
+
+  itensPedido ItemPedido[]
+
+  @@index([categoriaId])
+  @@index([formatoId])
+  @@index([estiloId])
+  @@map("produtos")
+}
+
+model KitCustomizado {
+  id        String  @id @default(uuid())
+  usuarioId String
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  formatoId String
+  formato   Formato @relation(fields: [formatoId], references: [id])
+
+  // reaproveita a tabela de estilos como registro de "temas" (ver AI prompt doc §2:
+  // {{tema}} vem de "tag cadastrada pelo admin", mesma origem do estilo/tema do catálogo)
+  temaId String
+  tema   Estilo @relation(fields: [temaId], references: [id])
+
+  cores        String
+  estiloVisual String? // livre: fofo/infantil, elegante, dark, minimalista...
+  tipoEvento   String?
+  observacoes  String?
+
+  imagemGeradaUrl String?
+  tamanho         TamanhoKit?
+  preco           Decimal?    @db.Decimal(10, 2)
+  status          StatusKit   @default(RASCUNHO)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  itemPedido ItemPedido?
+
+  @@map("kits_customizados")
+}
+
+model Pedido {
+  id        String       @id @default(uuid())
+  usuarioId String
+  usuario   Usuario      @relation(fields: [usuarioId], references: [id])
+  status    StatusPedido @default(AGUARDANDO_PAGAMENTO)
+  total     Decimal      @db.Decimal(10, 2)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  itens      ItemPedido[]
+  pagamentos Pagamento[]
+
+  @@map("pedidos")
+}
+
+model ItemPedido {
+  id       String         @id @default(uuid())
+  pedidoId String
+  pedido   Pedido         @relation(fields: [pedidoId], references: [id])
+  tipo     TipoItemPedido
+
+  produtoId String?
+  produto   Produto? @relation(fields: [produtoId], references: [id])
+
+  kitCustomizadoId String?         @unique
+  kitCustomizado   KitCustomizado? @relation(fields: [kitCustomizadoId], references: [id])
+
+  quantidade    Int     @default(1)
+  precoUnitario Decimal @db.Decimal(10, 2)
+
+  @@map("itens_do_pedido")
+}
+
+model Pagamento {
+  id       String @id @default(uuid())
+  pedidoId String
+  pedido   Pedido @relation(fields: [pedidoId], references: [id])
+
+  metodo MetodoPagamento
+  status StatusPagamento @default(PENDENTE)
+  valor  Decimal         @db.Decimal(10, 2)
+
+  mercadoPagoPaymentId String? @unique
+  qrCodeBase64         String? @db.Text
+  qrCodeCopiaCola      String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("pagamentos")
+}

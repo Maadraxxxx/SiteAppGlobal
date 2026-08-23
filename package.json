@@ -1,0 +1,17 @@
+{
+  "name": "global-decora",
+  "private": true,
+  "workspaces": [
+    "app",
+    "server",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,app -c blue,magenta \"npm run dev -w server\" \"npm run start -w app\"",
+    "db:migrate": "npm run db:migrate -w server",
+    "db:seed": "npm run db:seed -w server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

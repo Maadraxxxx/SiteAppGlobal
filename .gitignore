@@ -1,0 +1,24 @@
+node_modules/
+
+# Expo / app
+app/.expo/
+app/dist/
+app/web-build/
+app/expo-env.d.ts
+app/*.jks
+app/*.p8
+app/*.p12
+app/*.key
+app/*.mobileprovision
+
+# server
+server/dist/
+
+# env
+*.env
+*.env.local
+!*.env.example
+
+# misc
+.DS_Store
+npm-debug.log*
