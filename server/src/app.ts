@@ -32,10 +32,7 @@ export function buildApp() {
       });
     }
     app.log.error(error);
-    return reply.code(500).send({
-      error: { code: 'INTERNAL_ERROR', message: 'Erro interno' },
-      debug: { name: error.name, message: error.message, code: (error as { code?: string }).code },
-    });
+    return reply.code(500).send({ error: { code: 'INTERNAL_ERROR', message: 'Erro interno' } });
   });
 
   app.get('/health', async () => ({ ok: true }));
