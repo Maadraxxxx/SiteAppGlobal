@@ -12,8 +12,10 @@ const envSchema = z.object({
   SEED_CLIENTE_EMAIL: z.string().email().default('cliente@example.com'),
   SEED_CLIENTE_PASSWORD: z.string().min(6).default('changeme123'),
 
-  SUPABASE_URL: z.string().optional(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+  // sem prefixo SUPABASE_ de propósito — a Vercel reserva esse prefixo pra
+  // integração própria dela e recusa variáveis com esse nome
+  SUPA_URL: z.string().optional(),
+  SUPA_SERVICE_ROLE_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

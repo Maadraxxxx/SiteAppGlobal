@@ -6,9 +6,9 @@ const BUCKET = 'produtos';
 let bucketReady = false;
 
 function assertConfigured() {
-  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (!env.SUPA_URL || !env.SUPA_SERVICE_ROLE_KEY) {
     throw badRequest(
-      'Upload de imagem ainda nao configurado — falta SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY no servidor.',
+      'Upload de imagem ainda nao configurado — falta SUPA_URL/SUPA_SERVICE_ROLE_KEY no servidor.',
     );
   }
 }
@@ -17,11 +17,11 @@ async function ensureBucket() {
   if (bucketReady) return;
   assertConfigured();
 
-  const res = await fetch(`${env.SUPABASE_URL}/storage/v1/bucket`, {
+  const res = await fetch(`${env.SUPA_URL}/storage/v1/bucket`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-      apikey: env.SUPABASE_SERVICE_ROLE_KEY as string,
+      Authorization: `Bearer ${env.SUPA_SERVICE_ROLE_KEY}`,
+      apikey: env.SUPA_SERVICE_ROLE_KEY as string,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ id: BUCKET, name: BUCKET, public: true }),
@@ -52,11 +52,11 @@ export async function uploadProdutoImagem(
   const ext = filename.includes('.') ? filename.split('.').pop() : 'jpg';
   const path = `${randomUUID()}.${ext}`;
 
-  const res = await fetch(`${env.SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
+  const res = await fetch(`${env.SUPA_URL}/storage/v1/object/${BUCKET}/${path}`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-      apikey: env.SUPABASE_SERVICE_ROLE_KEY as string,
+      Authorization: `Bearer ${env.SUPA_SERVICE_ROLE_KEY}`,
+      apikey: env.SUPA_SERVICE_ROLE_KEY as string,
       'Content-Type': mimetype,
     },
     body: buffer,
@@ -67,5 +67,5 @@ export async function uploadProdutoImagem(
     throw new Error(`Falha ao enviar imagem: ${res.status} ${text}`);
   }
 
-  return `${env.SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
+  return `${env.SUPA_URL}/storage/v1/object/public/${BUCKET}/${path}`;
 }
