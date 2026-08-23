@@ -54,6 +54,8 @@ export default function RootLayout() {
               <Stack.Screen name="(auth)/register" options={{ headerShown: true, title: 'Criar conta' }} />
               <Stack.Screen name="produto/[id]" options={{ headerShown: true, title: '' }} />
               <Stack.Screen name="carrinho" options={{ headerShown: true, title: 'Carrinho' }} />
+              <Stack.Screen name="pedidos" options={{ headerShown: true, title: 'Meus Pedidos' }} />
+              <Stack.Screen name="editar-perfil" options={{ headerShown: true, title: 'Editar Perfil' }} />
               <Stack.Screen name="admin" />
               <Stack.Screen name="+not-found" />
             </Stack>

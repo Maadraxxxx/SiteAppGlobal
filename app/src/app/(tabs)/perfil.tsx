@@ -8,6 +8,35 @@ import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/hooks/use-theme';
 
+function MenuRow({
+  icon,
+  label,
+  onPress,
+  highlight,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+  highlight?: boolean;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[
+        styles.menuRow,
+        { backgroundColor: highlight ? theme.primary : theme.backgroundElement },
+      ]}>
+      <Ionicons name={icon} size={20} color={highlight ? theme.primaryText : theme.text} />
+      <ThemedText type="smallBold" themeColor={highlight ? 'primaryText' : 'text'} style={styles.menuLabel}>
+        {label}
+      </ThemedText>
+      <Ionicons name="chevron-forward" size={18} color={highlight ? theme.primaryText : theme.textSecondary} />
+    </Pressable>
+  );
+}
+
 export default function PerfilScreen() {
   const { usuario, isLoading, logout } = useAuth();
   const theme = useTheme();
@@ -40,16 +69,13 @@ export default function PerfilScreen() {
         </ThemedText>
       </View>
 
-      {usuario.role === 'ADMIN' ? (
-        <Pressable
-          onPress={() => router.push('/admin')}
-          style={[styles.adminLink, { backgroundColor: theme.primary }]}>
-          <Ionicons name="settings" color={theme.primaryText} size={20} />
-          <ThemedText type="smallBold" themeColor="primaryText">
-            Painel Admin
-          </ThemedText>
-        </Pressable>
-      ) : null}
+      <View style={styles.menu}>
+        <MenuRow icon="receipt-outline" label="Meus Pedidos" onPress={() => router.push('/pedidos')} />
+        <MenuRow icon="person-outline" label="Editar Perfil" onPress={() => router.push('/editar-perfil')} />
+        {usuario.role === 'ADMIN' ? (
+          <MenuRow icon="settings" label="Painel Admin" onPress={() => router.push('/admin')} highlight />
+        ) : null}
+      </View>
 
       <Button title="Sair" variant="ghost" onPress={logout} />
     </Screen>
@@ -74,12 +100,17 @@ const styles = StyleSheet.create({
     borderRadius: Radius.medium,
     gap: Spacing.half,
   },
-  adminLink: {
+  menu: {
+    gap: Spacing.two,
+  },
+  menuRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: Spacing.three,
     padding: Spacing.three,
     borderRadius: Radius.medium,
-    justifyContent: 'center',
+  },
+  menuLabel: {
+    flex: 1,
   },
 });

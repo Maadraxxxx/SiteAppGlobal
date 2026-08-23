@@ -9,6 +9,7 @@ interface AuthContextValue {
   login: (email: string, senha: string) => Promise<void>;
   register: (nome: string, email: string, senha: string) => Promise<void>;
   logout: () => Promise<void>;
+  atualizarUsuario: (usuario: Usuario) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -56,7 +57,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }
 
   return (
-    <AuthContext.Provider value={{ usuario, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ usuario, isLoading, login, register, logout, atualizarUsuario: setUsuario }}>
       {children}
     </AuthContext.Provider>
   );

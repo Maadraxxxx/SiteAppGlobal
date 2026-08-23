@@ -38,6 +38,24 @@ export async function findUsuarioById(id: string) {
   return usuario;
 }
 
+export async function updatePerfil(id: string, nome: string, email: string) {
+  const emailEmUso = await prisma.usuario.findFirst({ where: { email, NOT: { id } } });
+  if (emailEmUso) {
+    throw badRequest('Ja existe uma conta com esse email');
+  }
+  return prisma.usuario.update({ where: { id }, data: { nome, email } });
+}
+
+export async function updateSenha(id: string, senhaAtual: string, novaSenha: string) {
+  const usuario = await findUsuarioById(id);
+  const senhaValida = await bcrypt.compare(senhaAtual, usuario.senhaHash);
+  if (!senhaValida) {
+    throw badRequest('Senha atual incorreta');
+  }
+  const senhaHash = await bcrypt.hash(novaSenha, 10);
+  await prisma.usuario.update({ where: { id }, data: { senhaHash } });
+}
+
 export function toPublicUsuario(usuario: { id: string; nome: string; email: string; role: string }) {
   return { id: usuario.id, nome: usuario.nome, email: usuario.email, role: usuario.role };
 }

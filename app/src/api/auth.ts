@@ -14,4 +14,10 @@ export const authApi = {
     apiRequest<AuthResponse>('/auth/register', { method: 'POST', body: { nome, email, senha } }),
 
   me: () => apiRequest<{ usuario: Usuario }>('/auth/me'),
+
+  updatePerfil: (nome: string, email: string) =>
+    apiRequest<{ usuario: Usuario }>('/auth/me', { method: 'PUT', body: { nome, email } }),
+
+  updateSenha: (senhaAtual: string, novaSenha: string) =>
+    apiRequest<void>('/auth/me/senha', { method: 'PUT', body: { senhaAtual, novaSenha } }),
 };
