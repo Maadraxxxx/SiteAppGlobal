@@ -1,5 +1,5 @@
 {
-  "buildCommand": "prisma generate && mkdir -p public",
+  "buildCommand": "prisma generate && mkdir -p public && echo '<!doctype html><title>Global Decora API</title><p>API rodando via funcoes serverless.</p>' > public/index.html",
   "outputDirectory": "public",
   "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
 }
