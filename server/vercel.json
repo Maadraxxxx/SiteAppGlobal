@@ -1,3 +1,5 @@
 {
+  "buildCommand": "prisma generate && mkdir -p public",
+  "outputDirectory": "public",
   "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
 }
