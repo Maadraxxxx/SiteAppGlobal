@@ -7,10 +7,9 @@ import {
   useFonts,
 } from '@expo-google-fonts/poppins';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
@@ -22,7 +21,6 @@ const queryClient = new QueryClient({
 });
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   const [fontsLoaded] = useFonts({
     Poppins_400Regular,
     Poppins_500Medium,
@@ -41,17 +39,14 @@ export default function RootLayout() {
     return null;
   }
 
-  const navTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
-  const brandColors = colorScheme === 'dark' ? Colors.dark : Colors.light;
-
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <CartProvider>
           <ThemeProvider
             value={{
-              ...navTheme,
-              colors: { ...navTheme.colors, primary: brandColors.primary, background: brandColors.background },
+              ...DefaultTheme,
+              colors: { ...DefaultTheme.colors, primary: Colors.light.primary, background: Colors.light.background },
             }}>
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(tabs)" />
