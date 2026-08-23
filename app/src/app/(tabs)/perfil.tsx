@@ -16,7 +16,7 @@ export default function PerfilScreen() {
 
   if (!usuario) {
     return (
-      <Screen style={styles.centered}>
+      <Screen maxWidth={1600} style={styles.centered}>
         <ThemedText type="title">Perfil</ThemedText>
         <ThemedText themeColor="textSecondary" style={styles.subtitle}>
           Entre na sua conta para acompanhar pedidos e usar o painel admin.
@@ -30,7 +30,7 @@ export default function PerfilScreen() {
   }
 
   return (
-    <Screen>
+    <Screen maxWidth={1600}>
       <ThemedText type="title">Perfil</ThemedText>
 
       <View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>

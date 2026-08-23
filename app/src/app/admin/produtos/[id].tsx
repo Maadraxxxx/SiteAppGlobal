@@ -3,7 +3,10 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
+import { FormSection } from '@/components/FormSection';
+import { ProdutoImagePicker } from '@/components/ProdutoImagePicker';
 import { Screen } from '@/components/Screen';
+import { TagSelector } from '@/components/TagSelector';
 import { TextField } from '@/components/TextField';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -18,15 +21,19 @@ export default function AdminProdutoFormScreen() {
   const categorias = useCategorias();
   const formatos = formatosHooks.useList();
   const estilos = estilosHooks.useList();
+  const createFormato = formatosHooks.useCreate();
+  const createEstilo = estilosHooks.useCreate();
   const createMutation = useCreateProduto();
   const updateMutation = useUpdateProduto();
 
   const [nome, setNome] = useState('');
   const [descricao, setDescricao] = useState('');
   const [preco, setPreco] = useState('');
-  const [medidas, setMedidas] = useState('');
+  const [comprimento, setComprimento] = useState('');
+  const [largura, setLargura] = useState('');
+  const [altura, setAltura] = useState('');
   const [peso, setPeso] = useState('');
-  const [imagemUrl, setImagemUrl] = useState('');
+  const [imagemUrl, setImagemUrl] = useState<string>();
   const [categoriaId, setCategoriaId] = useState<string>();
   const [formatoId, setFormatoId] = useState<string>();
   const [estiloId, setEstiloId] = useState<string>();
@@ -38,14 +45,20 @@ export default function AdminProdutoFormScreen() {
       setNome(produto.nome);
       setDescricao(produto.descricao ?? '');
       setPreco(String(produto.preco));
-      setMedidas(produto.medidas ?? '');
+      setComprimento(produto.comprimento ? String(produto.comprimento) : '');
+      setLargura(produto.largura ? String(produto.largura) : '');
+      setAltura(produto.altura ? String(produto.altura) : '');
       setPeso(produto.peso ? String(produto.peso) : '');
-      setImagemUrl(produto.imagemUrl ?? '');
+      setImagemUrl(produto.imagemUrl ?? undefined);
       setCategoriaId(produto.categoriaId);
       setFormatoId(produto.formatoId);
       setEstiloId(produto.estiloId);
     }
   }, [data]);
+
+  function toNumber(value: string) {
+    return value.trim() ? Number(value.replace(',', '.')) : undefined;
+  }
 
   async function handleSave() {
     const precoNumero = Number(preco.replace(',', '.'));
@@ -59,9 +72,11 @@ export default function AdminProdutoFormScreen() {
       nome: nome.trim(),
       descricao: descricao.trim() || undefined,
       preco: precoNumero,
-      medidas: medidas.trim() || undefined,
-      peso: peso ? Number(peso.replace(',', '.')) : undefined,
-      imagemUrl: imagemUrl.trim() || undefined,
+      comprimento: toNumber(comprimento),
+      largura: toNumber(largura),
+      altura: toNumber(altura),
+      peso: toNumber(peso),
+      imagemUrl,
       categoriaId,
       formatoId,
       estiloId,
@@ -82,69 +97,76 @@ export default function AdminProdutoFormScreen() {
   const saving = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <Screen style={{ gap: Spacing.three }}>
+    <Screen style={styles.screen}>
       <ThemedText type="title">{isNew ? 'Novo produto' : 'Editar produto'}</ThemedText>
 
-      <TextField label="Nome" value={nome} onChangeText={setNome} />
-      <TextField label="Descrição" value={descricao} onChangeText={setDescricao} multiline />
-      <TextField label="Preço (R$)" value={preco} onChangeText={setPreco} keyboardType="decimal-pad" />
-      <TextField label="Medidas" value={medidas} onChangeText={setMedidas} placeholder="ex: 1.5m diâmetro" />
-      <TextField label="Peso (kg)" value={peso} onChangeText={setPeso} keyboardType="decimal-pad" />
-      <TextField label="URL da imagem" value={imagemUrl} onChangeText={setImagemUrl} autoCapitalize="none" />
+      <FormSection title="Informações básicas">
+        <TextField label="Nome" value={nome} onChangeText={setNome} />
+        <TextField label="Descrição" value={descricao} onChangeText={setDescricao} multiline />
+        <TextField label="Preço (R$)" value={preco} onChangeText={setPreco} keyboardType="decimal-pad" />
+      </FormSection>
 
-      <View style={styles.pickerGroup}>
-        <ThemedText type="small" themeColor="textSecondary">
-          Categoria
-        </ThemedText>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={styles.chipRow}>
-            {categorias.data?.items.map((categoria) => (
-              <Chip
-                key={categoria.id}
-                label={categoria.nome}
-                selected={categoriaId === categoria.id}
-                onPress={() => setCategoriaId(categoria.id)}
-              />
-            ))}
+      <FormSection title="Dimensões e peso">
+        <View style={styles.dimensionsRow}>
+          <View style={styles.dimensionField}>
+            <TextField
+              label="Compr. (cm)"
+              value={comprimento}
+              onChangeText={setComprimento}
+              keyboardType="decimal-pad"
+            />
           </View>
-        </ScrollView>
-      </View>
+          <View style={styles.dimensionField}>
+            <TextField label="Larg. (cm)" value={largura} onChangeText={setLargura} keyboardType="decimal-pad" />
+          </View>
+          <View style={styles.dimensionField}>
+            <TextField label="Alt. (cm)" value={altura} onChangeText={setAltura} keyboardType="decimal-pad" />
+          </View>
+        </View>
+        <TextField label="Peso (kg)" value={peso} onChangeText={setPeso} keyboardType="decimal-pad" />
+      </FormSection>
 
-      <View style={styles.pickerGroup}>
-        <ThemedText type="small" themeColor="textSecondary">
-          Formato
-        </ThemedText>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={styles.chipRow}>
-            {formatos.data?.items.map((formato) => (
-              <Chip
-                key={formato.id}
-                label={formato.nome}
-                selected={formatoId === formato.id}
-                onPress={() => setFormatoId(formato.id)}
-              />
-            ))}
-          </View>
-        </ScrollView>
-      </View>
+      <FormSection title="Imagem">
+        <ProdutoImagePicker value={imagemUrl} onChange={setImagemUrl} />
+      </FormSection>
 
-      <View style={styles.pickerGroup}>
-        <ThemedText type="small" themeColor="textSecondary">
-          Estilo
-        </ThemedText>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={styles.chipRow}>
-            {estilos.data?.items.map((estilo) => (
-              <Chip
-                key={estilo.id}
-                label={estilo.nome}
-                selected={estiloId === estilo.id}
-                onPress={() => setEstiloId(estilo.id)}
-              />
-            ))}
-          </View>
-        </ScrollView>
-      </View>
+      <FormSection title="Classificação">
+        <View style={styles.pickerGroup}>
+          <ThemedText type="small" themeColor="textSecondary">
+            Categoria
+          </ThemedText>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.chipRow}>
+              {categorias.data?.items.map((categoria) => (
+                <Chip
+                  key={categoria.id}
+                  label={categoria.nome}
+                  selected={categoriaId === categoria.id}
+                  onPress={() => setCategoriaId(categoria.id)}
+                />
+              ))}
+            </View>
+          </ScrollView>
+        </View>
+
+        <TagSelector
+          label="Formato"
+          options={formatos.data?.items ?? []}
+          selectedId={formatoId}
+          onSelect={setFormatoId}
+          onCreate={(nome) => createFormato.mutateAsync(nome)}
+          creating={createFormato.isPending}
+        />
+
+        <TagSelector
+          label="Estilo"
+          options={estilos.data?.items ?? []}
+          selectedId={estiloId}
+          onSelect={setEstiloId}
+          onCreate={(nome) => createEstilo.mutateAsync(nome)}
+          creating={createEstilo.isPending}
+        />
+      </FormSection>
 
       {error ? (
         <ThemedText type="small" themeColor="danger">
@@ -158,6 +180,16 @@ export default function AdminProdutoFormScreen() {
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    gap: Spacing.four,
+  },
+  dimensionsRow: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  dimensionField: {
+    flex: 1,
+  },
   pickerGroup: {
     gap: Spacing.one,
   },

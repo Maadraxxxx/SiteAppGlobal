@@ -110,10 +110,12 @@ model Produto {
   id        String   @id @default(uuid())
   nome      String
   descricao String?
-  preco     Decimal  @db.Decimal(10, 2)
-  medidas   String?
-  peso      Decimal? @db.Decimal(10, 3)
-  imagemUrl String?
+  preco       Decimal  @db.Decimal(10, 2)
+  comprimento Decimal? @db.Decimal(10, 2) // cm
+  largura     Decimal? @db.Decimal(10, 2) // cm
+  altura      Decimal? @db.Decimal(10, 2) // cm
+  peso        Decimal? @db.Decimal(10, 3) // kg
+  imagemUrl   String?
   ativo     Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

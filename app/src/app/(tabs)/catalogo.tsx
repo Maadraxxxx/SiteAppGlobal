@@ -1,18 +1,92 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, FlatList, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { Button } from '@/components/Button';
+import { CartButton } from '@/components/CartButton';
 import { Chip } from '@/components/Chip';
 import { ProductCard } from '@/components/ProductCard';
 import { Screen } from '@/components/Screen';
+import { TextField } from '@/components/TextField';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { estilosHooks, formatosHooks, useCategorias } from '@/hooks/useCatalogo';
+import { useTheme } from '@/hooks/use-theme';
 import { useProdutos } from '@/hooks/useProdutos';
+
+interface TagOption {
+  id: string;
+  nome: string;
+  slug: string;
+}
+
+function FilterRow({
+  label,
+  items,
+  selected,
+  onSelect,
+}: {
+  label: string;
+  items: TagOption[];
+  selected?: string;
+  onSelect: (slug: string | undefined) => void;
+}) {
+  if (!items.length) return null;
+
+  return (
+    <View style={styles.filterGroup}>
+      <ThemedText type="small" themeColor="textSecondary">
+        {label}
+      </ThemedText>
+      <View style={styles.chipRow}>
+        {items.map((item) => (
+          <Chip
+            key={item.id}
+            label={item.nome}
+            selected={selected === item.slug}
+            onPress={() => onSelect(selected === item.slug ? undefined : item.slug)}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function useNumColumns() {
+  const { width } = useWindowDimensions();
+  if (width >= 1500) return 6;
+  if (width >= 1200) return 5;
+  if (width >= 900) return 4;
+  if (width >= 600) return 3;
+  return 2;
+}
 
 export default function CatalogoScreen() {
   const [categoriaSlug, setCategoriaSlug] = useState<string>();
   const [formatoSlug, setFormatoSlug] = useState<string>();
   const [estiloSlug, setEstiloSlug] = useState<string>();
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
+  const theme = useTheme();
+  const numColumns = useNumColumns();
+  const [listWidth, setListWidth] = useState(0);
+  const cardMargin = Spacing.two;
+  const itemWidth = listWidth > 0 ? listWidth / numColumns - cardMargin * 2 : undefined;
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setSearch(searchInput.trim()), 300);
+    return () => clearTimeout(timeout);
+  }, [searchInput]);
 
   const categorias = useCategorias();
   const formatos = formatosHooks.useList();
@@ -22,59 +96,113 @@ export default function CatalogoScreen() {
     categoria: categoriaSlug,
     formato: formatoSlug,
     estilo: estiloSlug,
+    search: search || undefined,
   });
 
-  return (
-    <Screen scroll={false} style={styles.screen}>
-      <ThemedText type="title">Catálogo</ThemedText>
+  const filtrosAtivos = [categoriaSlug, formatoSlug, estiloSlug].filter(Boolean).length;
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filters}>
-        <View style={styles.filterGroup}>
-          {categorias.data?.items.map((categoria) => (
-            <Chip
-              key={categoria.id}
-              label={categoria.nome}
-              selected={categoriaSlug === categoria.slug}
-              onPress={() => setCategoriaSlug((prev) => (prev === categoria.slug ? undefined : categoria.slug))}
-            />
-          ))}
-          {formatos.data?.items.map((formato) => (
-            <Chip
-              key={formato.id}
-              label={formato.nome}
-              selected={formatoSlug === formato.slug}
-              onPress={() => setFormatoSlug((prev) => (prev === formato.slug ? undefined : formato.slug))}
-            />
-          ))}
-          {estilos.data?.items.map((estilo) => (
-            <Chip
-              key={estilo.id}
-              label={estilo.nome}
-              selected={estiloSlug === estilo.slug}
-              onPress={() => setEstiloSlug((prev) => (prev === estilo.slug ? undefined : estilo.slug))}
-            />
-          ))}
+  function limparFiltros() {
+    setCategoriaSlug(undefined);
+    setFormatoSlug(undefined);
+    setEstiloSlug(undefined);
+  }
+
+  return (
+    <Screen scroll={false} maxWidth={1600} style={styles.screen}>
+      <View style={styles.headerRow}>
+        <ThemedText type="title">Catálogo</ThemedText>
+        <CartButton />
+      </View>
+
+      <View style={styles.searchRow}>
+        <View style={styles.searchField}>
+          <TextField
+            label="Buscar produto"
+            value={searchInput}
+            onChangeText={setSearchInput}
+            placeholder="Nome do produto"
+          />
         </View>
-      </ScrollView>
+        <Pressable
+          onPress={() => setFiltrosAbertos(true)}
+          style={[styles.filterButton, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+          <Ionicons name="filter" size={20} color={theme.text} />
+          {filtrosAtivos > 0 ? (
+            <View style={[styles.badge, { backgroundColor: theme.primary }]}>
+              <ThemedText type="small" themeColor="primaryText" style={styles.badgeText}>
+                {filtrosAtivos}
+              </ThemedText>
+            </View>
+          ) : null}
+        </Pressable>
+      </View>
 
       {produtos.isLoading ? (
         <ActivityIndicator style={styles.loading} />
       ) : produtos.data?.items.length ? (
         <FlatList
+          key={numColumns}
           data={produtos.data.items}
           keyExtractor={(item) => item.id}
-          numColumns={2}
+          numColumns={numColumns}
           style={styles.listFlex}
           contentContainerStyle={styles.list}
+          onLayout={(event) => setListWidth(event.nativeEvent.layout.width)}
           renderItem={({ item }) => (
-            <ProductCard produto={item} onPress={() => router.push(`/produto/${item.id}`)} />
+            <ProductCard produto={item} width={itemWidth} onPress={() => router.push(`/produto/${item.id}`)} />
           )}
         />
       ) : (
         <ThemedText type="small" themeColor="textSecondary" style={styles.empty}>
-          Nenhum produto encontrado com esses filtros.
+          Nenhum produto encontrado.
         </ThemedText>
       )}
+
+      <Modal
+        visible={filtrosAbertos}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setFiltrosAbertos(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setFiltrosAbertos(false)} />
+        <View style={[styles.sheet, { backgroundColor: theme.background }]}>
+          <View style={styles.sheetHeader}>
+            <ThemedText type="subtitle">Filtrar</ThemedText>
+            <Pressable onPress={() => setFiltrosAbertos(false)}>
+              <Ionicons name="close" size={24} color={theme.text} />
+            </Pressable>
+          </View>
+
+          <ScrollView contentContainerStyle={styles.sheetContent}>
+            <FilterRow
+              label="Categoria"
+              items={categorias.data?.items ?? []}
+              selected={categoriaSlug}
+              onSelect={setCategoriaSlug}
+            />
+            <FilterRow
+              label="Formato"
+              items={formatos.data?.items ?? []}
+              selected={formatoSlug}
+              onSelect={setFormatoSlug}
+            />
+            <FilterRow
+              label="Estilo"
+              items={estilos.data?.items ?? []}
+              selected={estiloSlug}
+              onSelect={setEstiloSlug}
+            />
+          </ScrollView>
+
+          <View style={styles.sheetActions}>
+            <View style={styles.sheetActionButton}>
+              <Button title="Limpar filtros" variant="ghost" onPress={limparFiltros} />
+            </View>
+            <View style={styles.sheetActionButton}>
+              <Button title="Ver resultados" onPress={() => setFiltrosAbertos(false)} />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
@@ -84,14 +212,49 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: Spacing.four,
   },
-  filters: {
-    flexGrow: 0,
-    marginTop: Spacing.two,
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: Spacing.two,
+  },
+  searchField: {
+    flex: 1,
+  },
+  filterButton: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.small,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    fontSize: 11,
+    lineHeight: 14,
   },
   filterGroup: {
+    gap: Spacing.one,
+  },
+  chipRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.two,
-    paddingRight: Spacing.four,
   },
   listFlex: {
     flex: 1,
@@ -105,5 +268,31 @@ const styles = StyleSheet.create({
   empty: {
     marginTop: Spacing.six,
     textAlign: 'center',
+  },
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  sheet: {
+    borderTopLeftRadius: Radius.large,
+    borderTopRightRadius: Radius.large,
+    maxHeight: '75%',
+    padding: Spacing.four,
+    gap: Spacing.three,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sheetContent: {
+    gap: Spacing.three,
+  },
+  sheetActions: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  sheetActionButton: {
+    flex: 1,
   },
 });

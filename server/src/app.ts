@@ -1,5 +1,6 @@
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
+import multipart from '@fastify/multipart';
 import Fastify from 'fastify';
 import { ZodError } from 'zod';
 import { env } from './config/env';
@@ -9,12 +10,17 @@ import categoriasRoutes from './modules/categorias/routes';
 import estilosRoutes from './modules/estilos/routes';
 import formatosRoutes from './modules/formatos/routes';
 import produtosRoutes from './modules/produtos/routes';
+import uploadsRoutes from './modules/uploads/routes';
 
 export function buildApp() {
-  const app = Fastify({ logger: true });
+  // bodyLimit padrao do Fastify e 1MB pra qualquer requisicao — precisa ser
+  // maior que o limite de arquivo do multipart abaixo, senao fotos de celular
+  // (facilmente 2-8MB) quebram antes mesmo de chegar na validacao da rota.
+  const app = Fastify({ logger: true, bodyLimit: 20 * 1024 * 1024 });
 
   app.register(cors, { origin: true });
   app.register(jwt, { secret: env.JWT_SECRET, sign: { expiresIn: env.JWT_EXPIRES_IN } });
+  app.register(multipart, { limits: { fileSize: 15 * 1024 * 1024 } });
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof HttpError) {
@@ -38,6 +44,7 @@ export function buildApp() {
       api.register(formatosRoutes);
       api.register(estilosRoutes);
       api.register(produtosRoutes);
+      api.register(uploadsRoutes);
     },
     { prefix: '/api' },
   );

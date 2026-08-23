@@ -11,6 +11,9 @@ const envSchema = z.object({
   SEED_ADMIN_PASSWORD: z.string().min(6).default('changeme123'),
   SEED_CLIENTE_EMAIL: z.string().email().default('cliente@example.com'),
   SEED_CLIENTE_PASSWORD: z.string().min(6).default('changeme123'),
+
+  SUPABASE_URL: z.string().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -13,6 +13,7 @@ import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { AuthProvider } from '@/context/AuthContext';
+import { CartProvider } from '@/context/CartContext';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -46,20 +47,23 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <ThemeProvider
-          value={{
-            ...navTheme,
-            colors: { ...navTheme.colors, primary: brandColors.primary, background: brandColors.background },
-          }}>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="(auth)/login" options={{ headerShown: true, title: 'Entrar' }} />
-            <Stack.Screen name="(auth)/register" options={{ headerShown: true, title: 'Criar conta' }} />
-            <Stack.Screen name="produto/[id]" options={{ headerShown: true, title: '' }} />
-            <Stack.Screen name="admin" />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-        </ThemeProvider>
+        <CartProvider>
+          <ThemeProvider
+            value={{
+              ...navTheme,
+              colors: { ...navTheme.colors, primary: brandColors.primary, background: brandColors.background },
+            }}>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="(auth)/login" options={{ headerShown: true, title: 'Entrar' }} />
+              <Stack.Screen name="(auth)/register" options={{ headerShown: true, title: 'Criar conta' }} />
+              <Stack.Screen name="produto/[id]" options={{ headerShown: true, title: '' }} />
+              <Stack.Screen name="carrinho" options={{ headerShown: true, title: 'Carrinho' }} />
+              <Stack.Screen name="admin" />
+              <Stack.Screen name="+not-found" />
+            </Stack>
+          </ThemeProvider>
+        </CartProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

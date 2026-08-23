@@ -6,15 +6,17 @@ import { useTheme } from '@/hooks/use-theme';
 interface ScreenProps extends ViewProps {
   /** false when a child (e.g. FlatList) manages its own scrolling. */
   scroll?: boolean;
+  /** Overrides the default content width cap — wider for grid-heavy screens (ex: Catálogo). */
+  maxWidth?: number;
 }
 
-export function Screen({ children, style, scroll = true, ...rest }: ScreenProps) {
+export function Screen({ children, style, scroll = true, maxWidth = MaxContentWidth, ...rest }: ScreenProps) {
   const theme = useTheme();
 
   if (!scroll) {
     return (
       <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
-        <View style={[styles.flexInner, style]} {...rest}>
+        <View style={[styles.flexInner, { maxWidth }, style]} {...rest}>
           {children}
         </View>
       </SafeAreaView>
@@ -24,7 +26,7 @@ export function Screen({ children, style, scroll = true, ...rest }: ScreenProps)
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={[styles.inner, style]} {...rest}>
+        <View style={[styles.inner, { maxWidth }, style]} {...rest}>
           {children}
         </View>
       </ScrollView>
@@ -43,14 +45,12 @@ const styles = StyleSheet.create({
   },
   inner: {
     width: '100%',
-    maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.four,
     gap: Spacing.four,
   },
   flexInner: {
     flex: 1,
     width: '100%',
-    maxWidth: MaxContentWidth,
     alignSelf: 'center',
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,

@@ -6,7 +6,17 @@ import { useTheme } from '@/hooks/use-theme';
 import { Tag } from './Tag';
 import { ThemedText } from './themed-text';
 
-export function ProductCard({ produto, onPress }: { produto: Produto; onPress: () => void }) {
+export function ProductCard({
+  produto,
+  onPress,
+  width,
+}: {
+  produto: Produto;
+  onPress: () => void;
+  /** Largura explícita em pixels — evita depender de aspectRatio dentro de um FlatList em grade,
+   * que não calcula a altura de forma confiável no web quando a largura vem de flex. */
+  width?: number;
+}) {
   const theme = useTheme();
 
   return (
@@ -14,12 +24,19 @@ export function ProductCard({ produto, onPress }: { produto: Produto; onPress: (
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
+        width ? { width } : styles.cardFallback,
         { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.8 : 1 },
       ]}>
       {produto.imagemUrl ? (
-        <Image source={{ uri: produto.imagemUrl }} style={styles.image} contentFit="cover" />
+        <Image
+          source={{ uri: produto.imagemUrl }}
+          style={[styles.image, width ? { height: width } : null]}
+          contentFit="cover"
+        />
       ) : (
-        <View style={[styles.image, styles.placeholder, { backgroundColor: theme.secondary }]} />
+        <View
+          style={[styles.image, styles.placeholder, width ? { height: width } : null, { backgroundColor: theme.secondary }]}
+        />
       )}
       <View style={styles.info}>
         <ThemedText type="smallBold" numberOfLines={1}>
@@ -39,10 +56,12 @@ export function ProductCard({ produto, onPress }: { produto: Produto; onPress: (
 
 const styles = StyleSheet.create({
   card: {
-    flex: 1,
     borderRadius: Radius.medium,
     overflow: 'hidden',
     margin: Spacing.two,
+  },
+  cardFallback: {
+    flex: 1,
   },
   image: {
     width: '100%',

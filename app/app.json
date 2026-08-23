@@ -32,6 +32,13 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O Global Decora usa suas fotos para você escolher a imagem do produto.",
+          "cameraPermission": "O Global Decora usa a câmera para você fotografar o produto."
+        }
       ]
     ],
     "experiments": {

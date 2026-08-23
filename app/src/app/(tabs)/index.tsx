@@ -10,7 +10,7 @@ export default function HomeScreen() {
   const theme = useTheme();
 
   return (
-    <Screen style={styles.screen}>
+    <Screen maxWidth={1600} style={styles.screen}>
       <View style={[styles.hero, { backgroundColor: theme.primary }]}>
         <ThemedText style={[styles.wordmark, { fontFamily: Fonts.brand }]}>global</ThemedText>
         <ThemedText style={[styles.wordmarkSub, { fontFamily: Fonts.sansSemiBold }]}>DECORA</ThemedText>

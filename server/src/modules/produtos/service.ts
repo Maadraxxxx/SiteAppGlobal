@@ -51,7 +51,9 @@ export interface ProdutoInput {
   nome: string;
   descricao?: string;
   preco: number;
-  medidas?: string;
+  comprimento?: number;
+  largura?: number;
+  altura?: number;
   peso?: number;
   imagemUrl?: string;
   categoriaId: string;

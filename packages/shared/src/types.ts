@@ -32,8 +32,10 @@ export interface Produto {
   nome: string;
   descricao?: string | null;
   preco: string; // Prisma Decimal serializa como string no JSON
-  medidas?: string | null;
-  peso?: string | null;
+  comprimento?: string | null; // cm
+  largura?: string | null; // cm
+  altura?: string | null; // cm
+  peso?: string | null; // kg
   imagemUrl?: string | null;
   ativo: boolean;
   categoriaId: string;
@@ -48,7 +50,9 @@ export interface ProdutoInput {
   nome: string;
   descricao?: string;
   preco: number;
-  medidas?: string;
+  comprimento?: number;
+  largura?: number;
+  altura?: number;
   peso?: number;
   imagemUrl?: string;
   categoriaId: string;
