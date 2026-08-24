@@ -13,6 +13,9 @@ export const authApi = {
   register: (nome: string, email: string, senha: string) =>
     apiRequest<AuthResponse>('/auth/register', { method: 'POST', body: { nome, email, senha } }),
 
+  google: (idToken: string) =>
+    apiRequest<AuthResponse>('/auth/google', { method: 'POST', body: { idToken } }),
+
   me: () => apiRequest<{ usuario: Usuario }>('/auth/me'),
 
   updatePerfil: (nome: string, email: string) =>

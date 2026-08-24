@@ -38,6 +38,13 @@ const envSchema = z.object({
   MELHOR_ENVIO_CONTATO: z.string().default('contato@globaldecora.com'),
   // CEP de onde as encomendas saem (a loja). Sem ele não dá pra cotar.
   FRETE_CEP_ORIGEM: z.string().optional(),
+
+  // Login com Google. São os client IDs do Google Cloud (OAuth 2.0). O servidor
+  // usa todos como destinatários aceitos ao conferir o token; o app usa o da
+  // plataforma dele. Só o WEB é obrigatório pra funcionar no site.
+  GOOGLE_CLIENT_ID_WEB: z.string().optional(),
+  GOOGLE_CLIENT_ID_IOS: z.string().optional(),
+  GOOGLE_CLIENT_ID_ANDROID: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

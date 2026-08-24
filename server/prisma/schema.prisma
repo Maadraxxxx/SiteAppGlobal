@@ -56,7 +56,12 @@ model Usuario {
   id        String   @id @default(uuid())
   nome      String
   email     String   @unique
-  senhaHash String
+  // Nulo em conta criada pelo Google: nunca houve senha pra guardar.
+  senhaHash String?
+  // Identificador do Google (claim 'sub'), pra reconhecer a conta mesmo se o
+  // cliente trocar o e-mail depois.
+  googleId  String?  @unique
+  avatarUrl String?
   role      Role     @default(CLIENTE)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

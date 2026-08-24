@@ -1,6 +1,7 @@
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { Button } from '@/components/Button';
+import { GoogleButton } from '@/components/GoogleButton';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { ThemedText } from '@/components/themed-text';
@@ -28,9 +29,9 @@ export default function LoginScreen() {
   }
 
   return (
-    <Screen style={{ gap: Spacing.three }}>
+    <Screen maxWidth={480} style={{ gap: Spacing.three }}>
       <TextField
-        label="Email"
+        label="E-mail"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -43,9 +44,11 @@ export default function LoginScreen() {
         </ThemedText>
       ) : null}
       <Button title="Entrar" onPress={handleSubmit} loading={loading} />
+
+      <GoogleButton onSucesso={() => router.replace('/(tabs)/perfil')} />
       <Link href="/(auth)/register">
         <ThemedText type="link" themeColor="primary">
-          Ainda nao tem conta? Criar conta
+          Ainda não tem conta? Criar conta
         </ThemedText>
       </Link>
     </Screen>

@@ -1,6 +1,7 @@
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { Button } from '@/components/Button';
+import { GoogleButton } from '@/components/GoogleButton';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { ThemedText } from '@/components/themed-text';
@@ -100,6 +101,8 @@ export default function RegisterScreen() {
       ) : null}
 
       <Button title="Criar conta" onPress={handleSubmit} loading={loading} />
+
+      <GoogleButton onSucesso={() => router.replace('/(tabs)/perfil')} />
       <Link href="/(auth)/login">
         <ThemedText type="link" themeColor="primary">
           Já tem conta? Entrar

@@ -8,6 +8,7 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (email: string, senha: string) => Promise<void>;
   register: (nome: string, email: string, senha: string) => Promise<void>;
+  loginComGoogle: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
   atualizarUsuario: (usuario: Usuario) => void;
 }
@@ -51,13 +52,19 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setUsuario(usuario);
   }
 
+  async function loginComGoogle(idToken: string) {
+    const { token, usuario } = await authApi.google(idToken);
+    await tokenStorage.set(token);
+    setUsuario(usuario);
+  }
+
   async function logout() {
     await tokenStorage.clear();
     setUsuario(null);
   }
 
   return (
-    <AuthContext.Provider value={{ usuario, isLoading, login, register, logout, atualizarUsuario: setUsuario }}>
+    <AuthContext.Provider value={{ usuario, isLoading, login, register, loginComGoogle, logout, atualizarUsuario: setUsuario }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { verificarIdToken } from '../../lib/google-auth';
 import { authenticate } from '../../middleware/auth';
 import * as authService from './service';
 
@@ -19,8 +20,11 @@ const updatePerfilSchema = z.object({
   email: z.string().email(),
 });
 
+const googleSchema = z.object({ idToken: z.string().min(20) });
+
+// senhaAtual vazia e permitida: conta criada pelo Google ainda nao tem senha.
 const updateSenhaSchema = z.object({
-  senhaAtual: z.string().min(1),
+  senhaAtual: z.string().default(''),
   novaSenha: z.string().min(6),
 });
 
@@ -35,6 +39,14 @@ export default async function authRoutes(app: FastifyInstance) {
   app.post('/login', async (request, reply) => {
     const { email, senha } = loginSchema.parse(request.body);
     const usuario = await authService.login(email, senha);
+    const token = app.jwt.sign({ sub: usuario.id, role: usuario.role });
+    return reply.send({ token, usuario: authService.toPublicUsuario(usuario) });
+  });
+
+  app.post('/google', async (request, reply) => {
+    const { idToken } = googleSchema.parse(request.body);
+    const perfil = await verificarIdToken(idToken);
+    const usuario = await authService.loginComGoogle(perfil);
     const token = app.jwt.sign({ sub: usuario.id, role: usuario.role });
     return reply.send({ token, usuario: authService.toPublicUsuario(usuario) });
   });
