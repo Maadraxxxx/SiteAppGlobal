@@ -46,14 +46,9 @@ export default function HomeScreen() {
         <CartButton />
       </View>
 
-      <View style={styles.saudacao}>
-        <ThemedText type="subtitle" style={styles.saudacaoTitulo}>
-          {primeiroNome ? `Oi, ${primeiroNome}!` : 'Bem-vindo à Global Decora'}
-        </ThemedText>
-        <ThemedText themeColor="textSecondary">
-          Aqui seu tema é feito com muito carinho para a sua decoração.
-        </ThemedText>
-      </View>
+      <ThemedText type="subtitle" style={styles.saudacao}>
+        {primeiroNome ? `Seja bem-vindo, ${primeiroNome}!` : 'Seja bem-vindo!'}
+      </ThemedText>
 
       <HeroCarousel />
 
@@ -116,9 +111,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.small,
   },
   saudacao: {
-    gap: Spacing.one,
-  },
-  saudacaoTitulo: {
     fontSize: 24,
     lineHeight: 32,
   },
