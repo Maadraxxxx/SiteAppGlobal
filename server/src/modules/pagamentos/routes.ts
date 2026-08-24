@@ -6,11 +6,11 @@ import * as pagamentosService from './service';
 /**
  * Confere a assinatura que o MP manda no header `x-signature`.
  * Formato: "ts=<timestamp>,v1=<hash>", sobre `id:<id>;request-id:<rid>;ts:<ts>;`.
- * Sem MP_WEBHOOK_SECRET configurado a checagem e pulada — util em teste local,
+ * Sem MERCADOPAGO_WEBHOOK_SECRET configurado a checagem e pulada — util em teste local,
  * mas em producao configure, senao qualquer um consegue marcar pedido como pago.
  */
 function assinaturaValida(request: FastifyRequest, dataId: string) {
-  if (!env.MP_WEBHOOK_SECRET) return true;
+  if (!env.MERCADOPAGO_WEBHOOK_SECRET) return true;
 
   const assinatura = request.headers['x-signature'];
   const requestId = request.headers['x-request-id'];
@@ -24,7 +24,7 @@ function assinaturaValida(request: FastifyRequest, dataId: string) {
   if (!ts || !recebido) return false;
 
   const manifesto = `id:${dataId};request-id:${requestId ?? ''};ts:${ts};`;
-  const esperado = createHmac('sha256', env.MP_WEBHOOK_SECRET).update(manifesto).digest('hex');
+  const esperado = createHmac('sha256', env.MERCADOPAGO_WEBHOOK_SECRET).update(manifesto).digest('hex');
 
   const a = Buffer.from(esperado, 'utf8');
   const b = Buffer.from(recebido, 'utf8');

@@ -20,10 +20,10 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
 
   // Access token de produção ou de teste do Mercado Pago (Checkout Transparente).
-  MP_ACCESS_TOKEN: z.string().optional(),
+  MERCADOPAGO_ACCESS_TOKEN: z.string().optional(),
   // Segredo da assinatura do webhook, no painel do MP. Sem ele o webhook aceita
   // qualquer chamada — em produção configure.
-  MP_WEBHOOK_SECRET: z.string().optional(),
+  MERCADOPAGO_WEBHOOK_SECRET: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

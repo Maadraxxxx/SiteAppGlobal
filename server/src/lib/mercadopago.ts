@@ -5,8 +5,8 @@ import { badRequest } from './http-error';
 const API = 'https://api.mercadopago.com';
 
 function assertConfigured() {
-  if (!env.MP_ACCESS_TOKEN) {
-    throw badRequest('Pagamento ainda nao configurado — falta MP_ACCESS_TOKEN no servidor.');
+  if (!env.MERCADOPAGO_ACCESS_TOKEN) {
+    throw badRequest('Pagamento ainda nao configurado — falta MERCADOPAGO_ACCESS_TOKEN no servidor.');
   }
 }
 
@@ -14,7 +14,7 @@ async function mpFetch(path: string, init?: RequestInit & { idempotencyKey?: str
   assertConfigured();
 
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${env.MP_ACCESS_TOKEN}`,
+    Authorization: `Bearer ${env.MERCADOPAGO_ACCESS_TOKEN}`,
     'Content-Type': 'application/json',
   };
   // O MP exige chave de idempotencia em POST de pagamento: sem ela, um retry
