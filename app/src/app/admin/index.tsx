@@ -7,8 +7,7 @@ import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
-import { useAdminBanners } from '@/hooks/useBanners';
-import { useCategorias } from '@/hooks/useCatalogo';
+import { useResumoPedidosMes } from '@/hooks/usePedidos';
 import { useAdminProdutos } from '@/hooks/useProdutos';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -21,7 +20,13 @@ const RECENTES = 4;
 const ROTA_CARROSSEL = '/admin/banners' as Parameters<typeof router.push>[0];
 
 function moeda(valor: string | number) {
-  return `R$ ${Number(valor).toFixed(2).replace('.', ',')}`;
+  const [inteiro, centavos] = (Number(valor) || 0).toFixed(2).split('.');
+  const comMilhar = inteiro.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `R$ ${comMilhar},${centavos}`;
+}
+
+function nomeDoMes() {
+  return new Date().toLocaleDateString('pt-BR', { month: 'long' });
 }
 
 function SectionTitle({ titulo, acao }: { titulo: string; acao?: { label: string; onPress: () => void } }) {
@@ -94,14 +99,14 @@ function StatCard({
 export default function AdminDashboard() {
   const theme = useTheme();
   const produtos = useAdminProdutos();
-  const banners = useAdminBanners();
-  const categorias = useCategorias();
+  const pedidos = useResumoPedidosMes();
 
   const itens = produtos.data?.items ?? [];
   const totalProdutos = produtos.data?.total ?? 0;
   const inativos = itens.filter((p) => !p.ativo).length;
   const recentes = itens.slice(0, RECENTES);
-  const carregando = produtos.isLoading || banners.isLoading || categorias.isLoading;
+  const resumo = pedidos.data?.resumo;
+  const carregando = produtos.isLoading || pedidos.isLoading;
 
   if (carregando) {
     return (
@@ -114,25 +119,30 @@ export default function AdminDashboard() {
   return (
     <Screen maxWidth={900} style={styles.screen}>
       <View style={styles.grupo}>
-        <SectionTitle titulo="Resumo" />
+        <SectionTitle titulo={`Resumo de ${nomeDoMes()}`} />
+
+        {/* Arrecadado ganha a linha inteira: e o numero que mais importa e
+            "R$ 12.345,67" nao caberia num cartao de um terco da tela. */}
+        <View style={[styles.destaque, { backgroundColor: theme.backgroundElement }]}>
+          <View style={styles.destaqueTopo}>
+            <Ionicons name="cash-outline" size={18} color={theme.primary} />
+            <ThemedText type="small" themeColor="textSecondary">
+              Arrecadado no mês
+            </ThemedText>
+          </View>
+          <ThemedText type="subtitle" style={styles.destaqueValor} numberOfLines={1} adjustsFontSizeToFit>
+            {moeda(resumo?.arrecadado ?? 0)}
+          </ThemedText>
+        </View>
+
         <View style={styles.stats}>
+          <StatCard icon="receipt-outline" valor={resumo?.quantidade ?? 0} label="Pedidos no mês" />
           <StatCard
             icon="cube-outline"
             valor={totalProdutos}
             label="Produtos"
             nota={inativos ? `${inativos} inativo${inativos > 1 ? 's' : ''}` : undefined}
             onPress={() => router.push('/admin/produtos')}
-          />
-          <StatCard
-            icon="pricetags-outline"
-            valor={categorias.data?.items.length ?? 0}
-            label="Categorias"
-          />
-          <StatCard
-            icon="images-outline"
-            valor={banners.data?.items.length ?? 0}
-            label="Carrossel"
-            onPress={() => router.push(ROTA_CARROSSEL)}
           />
         </View>
       </View>
@@ -219,6 +229,20 @@ const styles = StyleSheet.create({
   sectionTitulo: {
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  destaque: {
+    padding: Spacing.three,
+    borderRadius: Radius.medium,
+    gap: Spacing.one,
+  },
+  destaqueTopo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  destaqueValor: {
+    fontSize: 32,
+    lineHeight: 40,
   },
   stats: {
     flexDirection: 'row',

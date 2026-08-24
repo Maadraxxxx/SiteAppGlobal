@@ -74,6 +74,13 @@ export interface PaginatedResult<T> {
   pageSize: number;
 }
 
+/** Numeros do mes corrente para o painel admin. `arrecadado` vem como string
+ * porque e Decimal no banco — converter pra number perderia centavos. */
+export interface ResumoPedidosMes {
+  quantidade: number;
+  arrecadado: string;
+}
+
 export interface ApiError {
   error: {
     code: string;
