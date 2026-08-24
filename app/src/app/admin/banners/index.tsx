@@ -44,7 +44,7 @@ export default function AdminBannersScreen() {
 
   return (
     <Screen scroll={false}>
-      <ThemedText type="title">Carrossel da Home</ThemedText>
+      {/* Sem titulo repetido: a barra de navegacao ja diz "Carrossel da Home". */}
       <ThemedText type="small" themeColor="textSecondary">
         As fotos aqui aparecem em rotação automática na tela inicial do app.
       </ThemedText>

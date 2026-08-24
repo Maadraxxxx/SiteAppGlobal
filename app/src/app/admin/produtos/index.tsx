@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
@@ -16,33 +17,48 @@ export default function AdminProdutosScreen() {
 
   return (
     <Screen scroll={false}>
-      <View style={styles.header}>
-        <ThemedText type="title">Produtos</ThemedText>
-        <Button title="Novo" onPress={() => router.push('/admin/produtos/novo')} />
-      </View>
+      {/* A barra de navegacao ja diz "Produtos", entao aqui fica so a acao. */}
+      <Button title="Novo produto" onPress={() => router.push('/admin/produtos/novo')} />
 
       {isLoading ? (
-        <ActivityIndicator />
+        <ActivityIndicator style={styles.loading} />
       ) : (
         <FlatList
           data={data?.items ?? []}
           keyExtractor={(item) => item.id}
           style={styles.listFlex}
           contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            <ThemedText type="small" themeColor="textSecondary" style={styles.vazio}>
+              Nenhum produto cadastrado ainda.
+            </ThemedText>
+          }
           renderItem={({ item }) => (
             <Pressable
               onPress={() => router.push(`/admin/produtos/${item.id}`)}
-              style={[styles.row, { backgroundColor: theme.backgroundElement, opacity: item.ativo ? 1 : 0.5 }]}>
+              style={({ pressed }) => [
+                styles.row,
+                { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.6 : item.ativo ? 1 : 0.6 },
+              ]}>
+              {item.imagemUrl ? (
+                <Image source={{ uri: item.imagemUrl }} style={styles.thumb} contentFit="cover" />
+              ) : (
+                <View style={[styles.thumb, { backgroundColor: theme.secondary }]} />
+              )}
               <View style={styles.rowLabel}>
-                <ThemedText type="smallBold">{item.nome}</ThemedText>
+                <ThemedText type="smallBold" numberOfLines={1}>
+                  {item.nome}
+                </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  R$ {Number(item.preco).toFixed(2).replace('.', ',')} {item.ativo ? '' : '· inativo'}
+                  R$ {Number(item.preco).toFixed(2).replace('.', ',')}
+                  {item.ativo ? '' : ' · inativo'}
                 </ThemedText>
               </View>
               <Pressable
                 onPress={() =>
                   item.ativo ? desativarMutation.mutate(item.id) : reativarMutation.mutate(item.id)
                 }
+                hitSlop={8}
                 style={styles.iconButton}>
                 <Ionicons
                   name={item.ativo ? 'eye-off' : 'eye'}
@@ -59,11 +75,6 @@ export default function AdminProdutosScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
   listFlex: {
     flex: 1,
   },
@@ -71,12 +82,24 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     paddingVertical: Spacing.three,
   },
+  loading: {
+    marginTop: Spacing.four,
+  },
+  vazio: {
+    marginTop: Spacing.four,
+    textAlign: 'center',
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: Spacing.three,
     borderRadius: Radius.medium,
-    gap: Spacing.two,
+    gap: Spacing.three,
+  },
+  thumb: {
+    width: 48,
+    height: 48,
+    borderRadius: Radius.small,
   },
   rowLabel: {
     flex: 1,
