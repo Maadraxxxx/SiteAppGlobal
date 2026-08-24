@@ -6,6 +6,7 @@ import { ActivityIndicator, Modal, Pressable, StyleSheet, View } from 'react-nat
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { Tag } from '@/components/Tag';
+import { TemaChatModal } from '@/components/TemaChatModal';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
@@ -19,6 +20,7 @@ export default function ProdutoDetailScreen() {
   const theme = useTheme();
   const [quantidade, setQuantidade] = useState(1);
   const [confirmacao, setConfirmacao] = useState<{ quantidade: number } | null>(null);
+  const [chatAberto, setChatAberto] = useState(false);
 
   if (isLoading) {
     return (
@@ -46,11 +48,24 @@ export default function ProdutoDetailScreen() {
 
   return (
     <Screen>
-      {produto.imagemUrl ? (
-        <Image source={{ uri: produto.imagemUrl }} style={styles.image} contentFit="cover" />
-      ) : (
-        <View style={[styles.image, { backgroundColor: theme.secondary }]} />
-      )}
+      <View style={styles.imageWrap}>
+        {produto.imagemUrl ? (
+          <Image source={{ uri: produto.imagemUrl }} style={styles.image} contentFit="cover" />
+        ) : (
+          <View style={[styles.image, { backgroundColor: theme.secondary }]} />
+        )}
+
+        {produto.imagemUrl ? (
+          <Pressable
+            onPress={() => setChatAberto(true)}
+            style={[styles.iaButton, { backgroundColor: theme.primary }]}>
+            <Ionicons name="sparkles" size={16} color={theme.primaryText} />
+            <ThemedText type="small" themeColor="primaryText">
+              Personalizar com IA
+            </ThemedText>
+          </Pressable>
+        ) : null}
+      </View>
 
       <ThemedText type="subtitle">{produto.nome}</ThemedText>
       <ThemedText type="title" themeColor="primary" style={styles.preco}>
@@ -140,6 +155,8 @@ export default function ProdutoDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      <TemaChatModal visible={chatAberto} onClose={() => setChatAberto(false)} produtoId={produto.id} />
     </Screen>
   );
 }
@@ -150,10 +167,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flex: 1,
   },
+  imageWrap: {
+    position: 'relative',
+  },
   image: {
     width: '100%',
     aspectRatio: 1,
     borderRadius: Radius.large,
+  },
+  iaButton: {
+    position: 'absolute',
+    bottom: Spacing.three,
+    right: Spacing.three,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: Radius.pill,
   },
   preco: {
     fontSize: 28,

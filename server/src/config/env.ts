@@ -16,6 +16,8 @@ const envSchema = z.object({
   // integração própria dela e recusa variáveis com esse nome
   SUPA_URL: z.string().optional(),
   SUPA_SERVICE_ROLE_KEY: z.string().optional(),
+
+  OPENAI_API_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

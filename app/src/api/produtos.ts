@@ -41,4 +41,10 @@ export const produtosApi = {
 
   reativar: (id: string) =>
     apiRequest<{ produto: Produto }>(`/admin/produtos/${id}/reativar`, { method: 'POST' }),
+
+  gerarImagemIA: (id: string, tema: string) =>
+    apiRequest<{ imagemUrl: string }>(`/produtos/${id}/gerar-imagem-ia`, {
+      method: 'POST',
+      body: { tema },
+    }),
 };

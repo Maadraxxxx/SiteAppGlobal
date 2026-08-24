@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { authenticate, requireAdmin } from '../../middleware/auth';
+import { gerarImagemComTema } from '../../lib/openai-image';
 import * as produtosService from './service';
 
 const produtoSchema = z.object({
@@ -38,6 +39,21 @@ export default async function produtosRoutes(app: FastifyInstance) {
     const produto = await produtosService.getProduto(id);
     return reply.send({ produto });
   });
+
+  app.post(
+    '/produtos/:id/gerar-imagem-ia',
+    { preHandler: authenticate },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const { tema } = z.object({ tema: z.string().min(3) }).parse(request.body);
+      const produto = await produtosService.getProduto(id);
+      if (!produto.imagemUrl) {
+        return reply.code(400).send({ error: { code: 'BAD_REQUEST', message: 'Produto nao tem imagem para adaptar' } });
+      }
+      const imagemUrl = await gerarImagemComTema(produto.imagemUrl, tema);
+      return reply.send({ imagemUrl });
+    },
+  );
 
   app.register(async (adminScope) => {
     adminScope.addHook('preHandler', authenticate);
