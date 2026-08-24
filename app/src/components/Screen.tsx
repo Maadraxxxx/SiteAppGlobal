@@ -46,6 +46,7 @@ const styles = StyleSheet.create({
   inner: {
     width: '100%',
     paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.four,
     gap: Spacing.four,
   },
   flexInner: {

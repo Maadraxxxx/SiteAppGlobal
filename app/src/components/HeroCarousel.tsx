@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   slide: {
-    aspectRatio: 16 / 9,
+    aspectRatio: 1,
     borderRadius: Radius.large,
   },
   dots: {

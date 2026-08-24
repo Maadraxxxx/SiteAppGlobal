@@ -4,27 +4,18 @@ import { StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { HeroCarousel } from '@/components/HeroCarousel';
 import { Screen } from '@/components/Screen';
-import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 
 export default function HomeScreen() {
   return (
     <Screen maxWidth={1600} style={styles.screen}>
-      <Image
-        source={require('@/assets/images/hero-logo.png')}
-        style={styles.heroImage}
-        contentFit="cover"
-      />
+      <Image source={require('@/assets/images/hero-logo.png')} style={styles.logo} contentFit="contain" />
 
-      <ThemedText type="default" themeColor="textSecondary" style={styles.tagline}>
-        Decorações de festa prontas — e kits personalizados sob medida para a sua celebração.
-      </ThemedText>
+      <HeroCarousel />
 
       <View style={styles.actions}>
         <Button title="Ver catálogo" onPress={() => router.push('/(tabs)/catalogo')} />
       </View>
-
-      <HeroCarousel />
     </Screen>
   );
 }
@@ -32,14 +23,12 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   screen: {
     gap: Spacing.four,
+    alignItems: 'center',
   },
-  heroImage: {
-    width: '100%',
+  logo: {
+    width: 120,
     aspectRatio: 16 / 9,
-    borderRadius: Radius.large,
-  },
-  tagline: {
-    textAlign: 'center',
+    borderRadius: Radius.medium,
   },
   actions: {
     width: '100%',

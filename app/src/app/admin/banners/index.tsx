@@ -28,7 +28,7 @@ export default function AdminBannersScreen() {
       </ThemedText>
 
       <FormSection title="Adicionar foto">
-        <ImageUploadField aspect={[16, 9]} boxWidth={280} onChange={handleAdd} />
+        <ImageUploadField aspect={[1, 1]} boxWidth={200} onChange={handleAdd} />
       </FormSection>
 
       {isLoading ? (
@@ -74,8 +74,8 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   thumb: {
-    flex: 1,
-    aspectRatio: 16 / 9,
+    width: 72,
+    height: 72,
     borderRadius: Radius.small,
   },
   removeButton: {
