@@ -8,6 +8,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  TextInput,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -16,9 +17,8 @@ import { CartButton } from '@/components/CartButton';
 import { Chip } from '@/components/Chip';
 import { ProductCard } from '@/components/ProductCard';
 import { Screen } from '@/components/Screen';
-import { TextField } from '@/components/TextField';
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing } from '@/constants/theme';
+import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { estilosHooks, formatosHooks, useCategorias } from '@/hooks/useCatalogo';
 import { useTheme } from '@/hooks/use-theme';
 import { useProdutos } from '@/hooks/useProdutos';
@@ -27,6 +27,13 @@ interface TagOption {
   id: string;
   nome: string;
   slug: string;
+}
+
+/** Filtro escolhido, mostrado fora do modal pra ficar claro o que esta valendo. */
+interface FiltroAtivo {
+  chave: string;
+  nome: string;
+  limpar: () => void;
 }
 
 function FilterRow({
@@ -61,13 +68,26 @@ function FilterRow({
   );
 }
 
-function useNumColumns() {
-  const { width } = useWindowDimensions();
+const CARD_MARGIN = Spacing.two;
+
+function colunasPara(width: number) {
   if (width >= 1500) return 6;
   if (width >= 1200) return 5;
   if (width >= 900) return 4;
   if (width >= 600) return 3;
   return 2;
+}
+
+/**
+ * Largura do card calculada a partir da janela, nao medida com onLayout — o
+ * onLayout nao dispara de forma confiavel aqui, e sem largura os cards caiam
+ * em flex:1, o que fazia o card sozinho da ultima linha esticar pra fila toda.
+ */
+function useGrade() {
+  const { width } = useWindowDimensions();
+  const numColumns = colunasPara(width);
+  const larguraConteudo = Math.min(width, 1600) - Spacing.four * 2;
+  return { numColumns, itemWidth: larguraConteudo / numColumns - CARD_MARGIN * 2 };
 }
 
 export default function CatalogoScreen() {
@@ -78,10 +98,7 @@ export default function CatalogoScreen() {
   const [search, setSearch] = useState('');
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
   const theme = useTheme();
-  const numColumns = useNumColumns();
-  const [listWidth, setListWidth] = useState(0);
-  const cardMargin = Spacing.two;
-  const itemWidth = listWidth > 0 ? listWidth / numColumns - cardMargin * 2 : undefined;
+  const { numColumns, itemWidth } = useGrade();
 
   useEffect(() => {
     const timeout = setTimeout(() => setSearch(searchInput.trim()), 300);
@@ -99,7 +116,28 @@ export default function CatalogoScreen() {
     search: search || undefined,
   });
 
-  const filtrosAtivos = [categoriaSlug, formatoSlug, estiloSlug].filter(Boolean).length;
+  const quantidadeFiltros = [categoriaSlug, formatoSlug, estiloSlug].filter(Boolean).length;
+
+  const filtrosAtivos: FiltroAtivo[] = [];
+  const categoriaAtiva = categorias.data?.items.find((c) => c.slug === categoriaSlug);
+  if (categoriaAtiva) {
+    filtrosAtivos.push({
+      chave: 'categoria',
+      nome: categoriaAtiva.nome,
+      limpar: () => setCategoriaSlug(undefined),
+    });
+  }
+  const formatoAtivo = formatos.data?.items.find((f) => f.slug === formatoSlug);
+  if (formatoAtivo) {
+    filtrosAtivos.push({ chave: 'formato', nome: formatoAtivo.nome, limpar: () => setFormatoSlug(undefined) });
+  }
+  const estiloAtivo = estilos.data?.items.find((e) => e.slug === estiloSlug);
+  if (estiloAtivo) {
+    filtrosAtivos.push({ chave: 'estilo', nome: estiloAtivo.nome, limpar: () => setEstiloSlug(undefined) });
+  }
+
+  const itens = produtos.data?.items ?? [];
+  const temBusca = search.length > 0;
 
   function limparFiltros() {
     setCategoriaSlug(undefined);
@@ -107,55 +145,114 @@ export default function CatalogoScreen() {
     setEstiloSlug(undefined);
   }
 
+  function limparTudo() {
+    limparFiltros();
+    setSearchInput('');
+  }
+
   return (
     <Screen scroll={false} maxWidth={1600} style={styles.screen}>
       <View style={styles.headerRow}>
-        <ThemedText type="title">Catálogo</ThemedText>
+        <ThemedText type="subtitle">Catálogo</ThemedText>
         <CartButton />
       </View>
 
       <View style={styles.searchRow}>
-        <View style={styles.searchField}>
-          <TextField
-            label="Buscar produto"
+        <View style={[styles.searchBox, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+          <Ionicons name="search" size={18} color={theme.textSecondary} />
+          <TextInput
             value={searchInput}
             onChangeText={setSearchInput}
-            placeholder="Nome do produto"
+            placeholder="Buscar produto"
+            placeholderTextColor={theme.textSecondary}
+            style={[styles.searchInput, { color: theme.text, fontFamily: Fonts.sans }]}
           />
+          {searchInput ? (
+            <Pressable onPress={() => setSearchInput('')} hitSlop={8}>
+              <Ionicons name="close-circle" size={18} color={theme.textSecondary} />
+            </Pressable>
+          ) : null}
         </View>
+
         <Pressable
           onPress={() => setFiltrosAbertos(true)}
-          style={[styles.filterButton, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-          <Ionicons name="filter" size={20} color={theme.text} />
-          {filtrosAtivos > 0 ? (
-            <View style={[styles.badge, { backgroundColor: theme.primary }]}>
-              <ThemedText type="small" themeColor="primaryText" style={styles.badgeText}>
-                {filtrosAtivos}
+          style={[
+            styles.filterButton,
+            {
+              backgroundColor: quantidadeFiltros ? theme.primary : theme.backgroundElement,
+              borderColor: quantidadeFiltros ? theme.primary : theme.border,
+            },
+          ]}>
+          <Ionicons name="options-outline" size={20} color={quantidadeFiltros ? theme.primaryText : theme.text} />
+          {quantidadeFiltros > 0 ? (
+            <View style={[styles.badge, { backgroundColor: theme.background }]}>
+              <ThemedText type="small" themeColor="primary" style={styles.badgeText}>
+                {quantidadeFiltros}
               </ThemedText>
             </View>
           ) : null}
         </Pressable>
       </View>
 
+      {filtrosAtivos.length ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.ativosBleed}
+          contentContainerStyle={styles.ativosContent}>
+          {filtrosAtivos.map((filtro) => (
+            <Pressable
+              key={filtro.chave}
+              onPress={filtro.limpar}
+              style={[styles.filtroAtivo, { backgroundColor: theme.backgroundSelected }]}>
+              <ThemedText type="small">{filtro.nome}</ThemedText>
+              <Ionicons name="close" size={14} color={theme.text} />
+            </Pressable>
+          ))}
+          <Pressable onPress={limparFiltros} style={styles.limparLink} hitSlop={8}>
+            <ThemedText type="smallBold" themeColor="primary">
+              Limpar
+            </ThemedText>
+          </Pressable>
+        </ScrollView>
+      ) : null}
+
       {produtos.isLoading ? (
         <ActivityIndicator style={styles.loading} />
-      ) : produtos.data?.items.length ? (
-        <FlatList
-          key={numColumns}
-          data={produtos.data.items}
-          keyExtractor={(item) => item.id}
-          numColumns={numColumns}
-          style={styles.listFlex}
-          contentContainerStyle={styles.list}
-          onLayout={(event) => setListWidth(event.nativeEvent.layout.width)}
-          renderItem={({ item }) => (
-            <ProductCard produto={item} width={itemWidth} onPress={() => router.push(`/produto/${item.id}`)} />
-          )}
-        />
+      ) : itens.length ? (
+        <>
+          <ThemedText type="small" themeColor="textSecondary">
+            {itens.length} {itens.length === 1 ? 'produto' : 'produtos'}
+          </ThemedText>
+          <FlatList
+            key={numColumns}
+            data={itens}
+            keyExtractor={(item) => item.id}
+            numColumns={numColumns}
+            style={styles.listFlex}
+            contentContainerStyle={styles.list}
+            renderItem={({ item }) => (
+              <ProductCard produto={item} width={itemWidth} onPress={() => router.push(`/produto/${item.id}`)} />
+            )}
+          />
+        </>
       ) : (
-        <ThemedText type="small" themeColor="textSecondary" style={styles.empty}>
-          Nenhum produto encontrado.
-        </ThemedText>
+        <View style={styles.vazio}>
+          <View style={[styles.vazioIcone, { backgroundColor: theme.backgroundElement }]}>
+            <Ionicons name="search" size={28} color={theme.textSecondary} />
+          </View>
+          <ThemedText type="smallBold">Nenhum produto encontrado</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.vazioTexto}>
+            {temBusca || quantidadeFiltros
+              ? 'Tente outra busca ou tire alguns filtros.'
+              : 'Assim que os produtos forem cadastrados eles aparecem aqui.'}
+          </ThemedText>
+          {temBusca || quantidadeFiltros ? (
+            <View style={styles.vazioAcao}>
+              <Button title="Limpar busca e filtros" variant="ghost" onPress={limparTudo} />
+            </View>
+          ) : null}
+        </View>
       )}
 
       <Modal
@@ -167,7 +264,7 @@ export default function CatalogoScreen() {
         <View style={[styles.sheet, { backgroundColor: theme.background }]}>
           <View style={styles.sheetHeader}>
             <ThemedText type="subtitle">Filtrar</ThemedText>
-            <Pressable onPress={() => setFiltrosAbertos(false)}>
+            <Pressable onPress={() => setFiltrosAbertos(false)} hitSlop={8}>
               <Ionicons name="close" size={24} color={theme.text} />
             </Pressable>
           </View>
@@ -211,6 +308,7 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     paddingTop: Spacing.four,
+    gap: Spacing.three,
   },
   headerRow: {
     flexDirection: 'row',
@@ -219,24 +317,35 @@ const styles = StyleSheet.create({
   },
   searchRow: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     gap: Spacing.two,
   },
-  searchField: {
+  searchBox: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    height: 44,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
   },
   filterButton: {
     width: 44,
     height: 44,
-    borderRadius: Radius.small,
+    borderRadius: Radius.pill,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   badge: {
     position: 'absolute',
-    top: -6,
-    right: -6,
+    top: -4,
+    right: -4,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
@@ -247,6 +356,28 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 11,
     lineHeight: 14,
+  },
+  // Deixa os filtros escolhidos correrem ate a borda, furando o padding do Screen.
+  ativosBleed: {
+    flexGrow: 0,
+    marginHorizontal: -Spacing.four,
+  },
+  ativosContent: {
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.four,
+  },
+  filtroAtivo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    paddingLeft: Spacing.three,
+    paddingRight: Spacing.two,
+    paddingVertical: Spacing.one,
+    borderRadius: Radius.pill,
+  },
+  limparLink: {
+    paddingHorizontal: Spacing.two,
   },
   filterGroup: {
     gap: Spacing.one,
@@ -260,14 +391,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   list: {
-    paddingVertical: Spacing.three,
+    paddingBottom: Spacing.three,
   },
   loading: {
     marginTop: Spacing.six,
   },
-  empty: {
-    marginTop: Spacing.six,
+  vazio: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+    paddingBottom: Spacing.six,
+  },
+  vazioIcone: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.one,
+  },
+  vazioTexto: {
     textAlign: 'center',
+  },
+  vazioAcao: {
+    marginTop: Spacing.two,
   },
   backdrop: {
     flex: 1,

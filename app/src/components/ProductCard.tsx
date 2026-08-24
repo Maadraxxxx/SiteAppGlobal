@@ -3,7 +3,6 @@ import { Image } from 'expo-image';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { Tag } from './Tag';
 import { ThemedText } from './themed-text';
 
 export function ProductCard({
@@ -42,13 +41,15 @@ export function ProductCard({
         <ThemedText type="smallBold" numberOfLines={1}>
           {produto.nome}
         </ThemedText>
-        <ThemedText type="smallBold" themeColor="primary">
+        <ThemedText type="subtitle" themeColor="primary" style={styles.preco}>
           R$ {Number(produto.preco).toFixed(2).replace('.', ',')}
         </ThemedText>
-        <View style={styles.tags}>
-          {produto.formato ? <Tag label={produto.formato.nome} /> : null}
-          {produto.estilo ? <Tag label={produto.estilo.nome} /> : null}
-        </View>
+        {/* Uma linha de texto no lugar das tags em chip: dois chips nao cabem
+            lado a lado na largura do card e quebravam pra segunda linha, o que
+            deixava a grade com cards de alturas diferentes. */}
+        <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+          {[produto.formato?.nome, produto.estilo?.nome].filter(Boolean).join(' · ')}
+        </ThemedText>
       </View>
     </Pressable>
   );
@@ -72,12 +73,10 @@ const styles = StyleSheet.create({
   },
   info: {
     padding: Spacing.three,
-    gap: Spacing.one,
+    gap: Spacing.half,
   },
-  tags: {
-    flexDirection: 'row',
-    gap: Spacing.one,
-    marginTop: Spacing.one,
-    flexWrap: 'wrap',
+  preco: {
+    fontSize: 18,
+    lineHeight: 24,
   },
 });
