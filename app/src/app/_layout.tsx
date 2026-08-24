@@ -62,7 +62,7 @@ export default function RootLayout() {
                   headerTitle: () => (
                     <Image
                       source={require('@/assets/images/hero-logo.png')}
-                      style={{ height: 32, aspectRatio: 16 / 9 }}
+                      style={{ height: '100%', aspectRatio: 16 / 9 }}
                       contentFit="contain"
                     />
                   ),
