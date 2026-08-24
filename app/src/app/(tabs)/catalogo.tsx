@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -71,7 +71,9 @@ function useNumColumns() {
 }
 
 export default function CatalogoScreen() {
-  const [categoriaSlug, setCategoriaSlug] = useState<string>();
+  // A Home manda a categoria escolhida pelos atalhos; sem parametro abre sem filtro.
+  const params = useLocalSearchParams<{ categoria?: string }>();
+  const [categoriaSlug, setCategoriaSlug] = useState<string | undefined>(params.categoria);
   const [formatoSlug, setFormatoSlug] = useState<string>();
   const [estiloSlug, setEstiloSlug] = useState<string>();
   const [searchInput, setSearchInput] = useState('');
@@ -87,6 +89,12 @@ export default function CatalogoScreen() {
     const timeout = setTimeout(() => setSearch(searchInput.trim()), 300);
     return () => clearTimeout(timeout);
   }, [searchInput]);
+
+  // A aba fica montada, entao voltar na Home e escolher outra categoria precisa
+  // reaplicar o filtro — o valor inicial do useState so vale na primeira vez.
+  useEffect(() => {
+    if (params.categoria) setCategoriaSlug(params.categoria);
+  }, [params.categoria]);
 
   const categorias = useCategorias();
   const formatos = formatosHooks.useList();
