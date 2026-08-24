@@ -54,18 +54,18 @@ export default function ProdutoDetailScreen() {
         ) : (
           <View style={[styles.image, { backgroundColor: theme.secondary }]} />
         )}
-
-        {produto.imagemUrl ? (
-          <Pressable
-            onPress={() => setChatAberto(true)}
-            style={[styles.iaButton, { backgroundColor: theme.primary }]}>
-            <Ionicons name="sparkles" size={16} color={theme.primaryText} />
-            <ThemedText type="small" themeColor="primaryText">
-              Personalizar com IA
-            </ThemedText>
-          </Pressable>
-        ) : null}
       </View>
+
+      {produto.imagemUrl ? (
+        <Pressable
+          onPress={() => setChatAberto(true)}
+          style={[styles.iaButton, { borderColor: theme.primary }]}>
+          <Ionicons name="sparkles" size={16} color={theme.primary} />
+          <ThemedText type="small" themeColor="primary">
+            Personalizar com IA
+          </ThemedText>
+        </Pressable>
+      ) : null}
 
       <ThemedText type="subtitle">{produto.nome}</ThemedText>
       <ThemedText type="title" themeColor="primary" style={styles.preco}>
@@ -176,15 +176,14 @@ const styles = StyleSheet.create({
     borderRadius: Radius.large,
   },
   iaButton: {
-    position: 'absolute',
-    bottom: Spacing.three,
-    right: Spacing.three,
     flexDirection: 'row',
+    alignSelf: 'flex-start',
     alignItems: 'center',
     gap: Spacing.one,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     borderRadius: Radius.pill,
+    borderWidth: 1,
   },
   preco: {
     fontSize: 28,
