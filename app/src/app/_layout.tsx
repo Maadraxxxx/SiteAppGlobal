@@ -8,6 +8,7 @@ import {
 } from '@expo-google-fonts/poppins';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { Colors } from '@/constants/theme';
@@ -52,7 +53,21 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="(auth)/login" options={{ headerShown: true, title: 'Entrar' }} />
               <Stack.Screen name="(auth)/register" options={{ headerShown: true, title: 'Criar conta' }} />
-              <Stack.Screen name="produto/[id]" options={{ headerShown: true, title: '' }} />
+              <Stack.Screen
+                name="produto/[id]"
+                options={{
+                  headerShown: true,
+                  title: '',
+                  headerTitleAlign: 'center',
+                  headerTitle: () => (
+                    <Image
+                      source={require('@/assets/images/hero-logo.png')}
+                      style={{ height: 32, aspectRatio: 16 / 9 }}
+                      contentFit="contain"
+                    />
+                  ),
+                }}
+              />
               <Stack.Screen name="carrinho" options={{ headerShown: true, title: 'Carrinho' }} />
               <Stack.Screen name="pedidos" options={{ headerShown: true, title: 'Meus Pedidos' }} />
               <Stack.Screen name="editar-perfil" options={{ headerShown: true, title: 'Editar Perfil' }} />
