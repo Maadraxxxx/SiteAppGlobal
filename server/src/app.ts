@@ -36,7 +36,11 @@ export function buildApp() {
       });
     }
     app.log.error(error);
-    return reply.code(500).send({ error: { code: 'INTERNAL_ERROR', message: 'Erro interno' } });
+    return reply.code(500).send({
+      error: { code: 'INTERNAL_ERROR', message: 'Erro interno' },
+      // DEBUG TEMPORARIO — remover assim que o frete for diagnosticado
+      debug: { name: error.name, message: error.message },
+    });
   });
 
   app.get('/health', async () => ({ ok: true }));
