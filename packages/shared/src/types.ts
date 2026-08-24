@@ -111,11 +111,27 @@ export interface Pagamento {
 export interface Pedido {
   id: string;
   status: StatusPedido;
+  /** soma dos itens, sem frete */
+  subtotal: string;
+  /** subtotal + frete — é o que vai pra cobrança */
   total: string;
+  cepDestino: string | null;
+  freteValor: string | null;
+  freteServico: string | null;
+  freteTransportadora: string | null;
+  fretePrazoDias: number | null;
   createdAt: string;
   itens: ItemPedido[];
   pagamentos: Pagamento[];
   usuario: { id: string; nome: string; email: string };
+}
+
+export interface OpcaoFrete {
+  id: number;
+  nome: string;
+  transportadora: string;
+  preco: number;
+  prazoDias: number;
 }
 
 export interface ApiError {

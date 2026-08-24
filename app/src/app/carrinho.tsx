@@ -1,9 +1,11 @@
+import type { OpcaoFrete } from '@global-decora/shared';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
+import { CalculadoraFrete } from '@/components/CalculadoraFrete';
 import { Screen } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
@@ -65,7 +67,15 @@ export default function CarrinhoScreen() {
   const { usuario } = useAuth();
   const criarPedido = useCriarPedido();
   const [error, setError] = useState<string>();
+  const [cep, setCep] = useState('');
+  const [frete, setFrete] = useState<OpcaoFrete>();
   const theme = useTheme();
+
+  const itensParaApi = items.map((item) => ({
+    produtoId: item.produto.id,
+    quantidade: item.quantidade,
+  }));
+  const total = totalPreco + (frete?.preco ?? 0);
 
   async function handleFinalizar() {
     if (!usuario) {
@@ -74,9 +84,10 @@ export default function CarrinhoScreen() {
     }
     setError(undefined);
     try {
-      const { pedido } = await criarPedido.mutateAsync(
-        items.map((item) => ({ produtoId: item.produto.id, quantidade: item.quantidade })),
-      );
+      const { pedido } = await criarPedido.mutateAsync({
+        itens: itensParaApi,
+        frete: frete ? { cep: cep.replace(/\D/g, ''), servicoId: frete.id } : undefined,
+      });
       // O carrinho ja virou pedido; manter os itens faria o cliente pedir de novo sem querer.
       clear();
       router.replace(ROTAS.pagamento(pedido.id));
@@ -108,10 +119,38 @@ export default function CarrinhoScreen() {
       />
 
       <View style={[styles.summary, { borderColor: theme.border }]}>
+        <CalculadoraFrete
+          itens={itensParaApi}
+          cep={cep}
+          onCepChange={setCep}
+          selecionado={frete}
+          onSelecionar={setFrete}
+        />
+
+        <View style={styles.summaryRow}>
+          <ThemedText type="small" themeColor="textSecondary">
+            Produtos
+          </ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            R$ {totalPreco.toFixed(2).replace('.', ',')}
+          </ThemedText>
+        </View>
+
+        {frete ? (
+          <View style={styles.summaryRow}>
+            <ThemedText type="small" themeColor="textSecondary">
+              Frete ({frete.nome})
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              R$ {frete.preco.toFixed(2).replace('.', ',')}
+            </ThemedText>
+          </View>
+        ) : null}
+
         <View style={styles.summaryRow}>
           <ThemedText type="smallBold">Total</ThemedText>
           <ThemedText type="smallBold" themeColor="primary">
-            R$ {totalPreco.toFixed(2).replace('.', ',')}
+            R$ {total.toFixed(2).replace('.', ',')}
           </ThemedText>
         </View>
 

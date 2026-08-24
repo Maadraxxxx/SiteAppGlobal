@@ -131,6 +131,18 @@ export default function AdminPedidosScreen() {
                       </ThemedText>
                     </View>
                   ))}
+                  {aberto.freteValor ? (
+                    <View style={styles.itemLinha}>
+                      <ThemedText type="small" themeColor="textSecondary" style={styles.itemNome}>
+                        Frete · {aberto.freteTransportadora} {aberto.freteServico}
+                        {aberto.fretePrazoDias ? ` (${aberto.fretePrazoDias} dias úteis)` : ''}
+                      </ThemedText>
+                      <ThemedText type="small" themeColor="textSecondary">
+                        {moeda(aberto.freteValor)}
+                      </ThemedText>
+                    </View>
+                  ) : null}
+
                   <View style={[styles.itemLinha, styles.totalLinha, { borderColor: theme.border }]}>
                     <ThemedText type="smallBold">Total</ThemedText>
                     <ThemedText type="smallBold" themeColor="primary">
@@ -138,6 +150,15 @@ export default function AdminPedidosScreen() {
                     </ThemedText>
                   </View>
                 </View>
+
+                {aberto.cepDestino ? (
+                  <View style={styles.bloco}>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      Entrega
+                    </ThemedText>
+                    <ThemedText type="smallBold">CEP {aberto.cepDestino}</ThemedText>
+                  </View>
+                ) : null}
 
                 <View style={styles.bloco}>
                   <ThemedText type="small" themeColor="textSecondary">

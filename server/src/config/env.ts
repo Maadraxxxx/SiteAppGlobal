@@ -24,6 +24,20 @@ const envSchema = z.object({
   // Segredo da assinatura do webhook, no painel do MP. Sem ele o webhook aceita
   // qualquer chamada — em produção configure.
   MERCADOPAGO_WEBHOOK_SECRET: z.string().optional(),
+
+  // Frete (Melhor Envio). O token é um "personal access token" gerado no painel
+  // deles, com o escopo shipping-calculate.
+  MELHOR_ENVIO_TOKEN: z.string().optional(),
+  // Enquanto true usa o ambiente de testes (sandbox.melhorenvio.com.br), que não
+  // gera cobrança nem etiqueta real.
+  MELHOR_ENVIO_SANDBOX: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
+  // O Melhor Envio exige User-Agent com um contato — é regra da API deles.
+  MELHOR_ENVIO_CONTATO: z.string().default('contato@globaldecora.com'),
+  // CEP de onde as encomendas saem (a loja). Sem ele não dá pra cotar.
+  FRETE_CEP_ORIGEM: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

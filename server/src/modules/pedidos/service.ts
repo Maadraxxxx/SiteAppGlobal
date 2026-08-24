@@ -1,6 +1,7 @@
 import { Prisma, StatusPedido } from '@prisma/client';
 import { prisma } from '../../db/prisma';
 import { badRequest, notFound } from '../../lib/http-error';
+import { precoDoServico } from '../frete/service';
 
 // "Arrecadado" e dinheiro que de fato entrou, entao pedido ainda aguardando
 // pagamento nao entra na soma — so os status que ja passaram pelo pagamento.
@@ -48,7 +49,13 @@ export interface ItemEntrada {
   quantidade: number;
 }
 
-export async function criarPedido(usuarioId: string, itens: ItemEntrada[]) {
+export interface FreteEntrada {
+  cep: string;
+  /** id do servico no Melhor Envio; o preco a gente reconfere com eles */
+  servicoId: number;
+}
+
+export async function criarPedido(usuarioId: string, itens: ItemEntrada[], frete?: FreteEntrada) {
   if (!itens.length) throw badRequest('O pedido precisa de pelo menos um item');
 
   // Junta duplicados: dois itens do mesmo produto viram um com a soma.
@@ -77,13 +84,31 @@ export async function criarPedido(usuarioId: string, itens: ItemEntrada[]) {
     };
   });
 
-  const total = linhas.reduce(
+  const subtotal = linhas.reduce(
     (soma, linha) => soma.add(new Prisma.Decimal(linha.precoUnitario).mul(linha.quantidade)),
     new Prisma.Decimal(0),
   );
 
+  // Mesmo cuidado do preco do produto: o valor do frete vem de uma nova
+  // consulta ao Melhor Envio, nao do que o app enviou.
+  let dadosFrete = {};
+  let total = subtotal;
+
+  if (frete) {
+    const escolhido = await precoDoServico(frete.cep, itens, frete.servicoId);
+    const valor = new Prisma.Decimal(escolhido.preco);
+    total = subtotal.add(valor);
+    dadosFrete = {
+      cepDestino: frete.cep,
+      freteValor: valor,
+      freteServico: escolhido.nome,
+      freteTransportadora: escolhido.transportadora,
+      fretePrazoDias: escolhido.prazoDias,
+    };
+  }
+
   return prisma.pedido.create({
-    data: { usuarioId, total, itens: { create: linhas } },
+    data: { usuarioId, subtotal, total, ...dadosFrete, itens: { create: linhas } },
     include: INCLUDE_PEDIDO,
   });
 }

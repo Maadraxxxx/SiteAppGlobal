@@ -184,9 +184,19 @@ model Pedido {
   usuarioId String
   usuario   Usuario      @relation(fields: [usuarioId], references: [id])
   status    StatusPedido @default(AGUARDANDO_PAGAMENTO)
+  // total = subtotal dos itens + frete; guardamos os dois pra nota e conferencia
+  subtotal  Decimal      @default(0) @db.Decimal(10, 2)
   total     Decimal      @db.Decimal(10, 2)
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
+
+  // Frete escolhido no carrinho (Melhor Envio). Nulo em pedido feito antes
+  // de existir calculo de frete, ou em retirada.
+  cepDestino     String?
+  freteValor     Decimal? @db.Decimal(10, 2)
+  freteServico   String? // ex: "PAC", "SEDEX", "Jadlog .Package"
+  freteTransportadora String?
+  fretePrazoDias Int?
 
   itens      ItemPedido[]
   pagamentos Pagamento[]

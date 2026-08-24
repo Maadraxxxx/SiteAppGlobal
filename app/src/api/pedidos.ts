@@ -6,9 +6,14 @@ export interface ItemEntrada {
   quantidade: number;
 }
 
+export interface FreteEscolhido {
+  cep: string;
+  servicoId: number;
+}
+
 export const pedidosApi = {
-  criar: (itens: ItemEntrada[]) =>
-    apiRequest<{ pedido: Pedido }>('/pedidos', { method: 'POST', body: { itens } }),
+  criar: (itens: ItemEntrada[], frete?: FreteEscolhido) =>
+    apiRequest<{ pedido: Pedido }>('/pedidos', { method: 'POST', body: { itens, frete } }),
 
   listarMeus: () => apiRequest<{ items: Pedido[] }>('/pedidos'),
 

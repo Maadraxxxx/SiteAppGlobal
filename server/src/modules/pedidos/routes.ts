@@ -9,6 +9,7 @@ const criarSchema = z.object({
   itens: z
     .array(z.object({ produtoId: z.string().uuid(), quantidade: z.number().int().positive() }))
     .min(1),
+  frete: z.object({ cep: z.string().min(8), servicoId: z.number().int() }).optional(),
 });
 
 const statusSchema = z.object({ status: z.nativeEnum(StatusPedido) });
@@ -18,8 +19,8 @@ export default async function pedidosRoutes(app: FastifyInstance) {
     scope.addHook('preHandler', authenticate);
 
     scope.post('/pedidos', async (request, reply) => {
-      const { itens } = criarSchema.parse(request.body);
-      const pedido = await pedidosService.criarPedido(request.user.sub, itens);
+      const { itens, frete } = criarSchema.parse(request.body);
+      const pedido = await pedidosService.criarPedido(request.user.sub, itens, frete);
       return reply.code(201).send({ pedido });
     });
 
