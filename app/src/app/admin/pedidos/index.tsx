@@ -1,5 +1,6 @@
 import type { Pedido, StatusPedido } from '@global-decora/shared';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
@@ -64,25 +65,51 @@ export default function AdminPedidosScreen() {
           keyExtractor={(item) => item.id}
           style={styles.lista}
           contentContainerStyle={styles.listaConteudo}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => setAberto(item)}
-              style={({ pressed }) => [
-                styles.card,
-                { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 },
-              ]}>
-              <View style={styles.cardLinha}>
-                <ThemedText type="smallBold">{moeda(item.total)}</ThemedText>
-                <StatusPedidoTag status={item.status} />
-              </View>
-              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-                {item.usuario.nome} · {item.itens.length} {item.itens.length === 1 ? 'item' : 'itens'}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                {dataHora(item.createdAt)}
-              </ThemedText>
-            </Pressable>
-          )}
+          renderItem={({ item }) => {
+            // Capa = foto do primeiro item que tiver imagem.
+            const capa = item.itens.find((i) => i.produto?.imagemUrl)?.produto?.imagemUrl;
+            const extras = item.itens.length - 1;
+
+            return (
+              <Pressable
+                onPress={() => setAberto(item)}
+                style={({ pressed }) => [
+                  styles.card,
+                  { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 },
+                ]}>
+                <View style={styles.cardTopo}>
+                  <View>
+                    {capa ? (
+                      <Image source={{ uri: capa }} style={styles.thumb} contentFit="cover" />
+                    ) : (
+                      <View style={[styles.thumb, { backgroundColor: theme.secondary }]} />
+                    )}
+                    {/* Pedido com mais de um produto: marca quantos ficaram de fora da capa. */}
+                    {extras > 0 ? (
+                      <View style={[styles.contador, { backgroundColor: theme.primary }]}>
+                        <ThemedText type="small" themeColor="primaryText" style={styles.contadorTexto}>
+                          +{extras}
+                        </ThemedText>
+                      </View>
+                    ) : null}
+                  </View>
+
+                  <View style={styles.cardTexto}>
+                    <View style={styles.cardLinha}>
+                      <ThemedText type="smallBold">{moeda(item.total)}</ThemedText>
+                      <StatusPedidoTag status={item.status} />
+                    </View>
+                    <ThemedText type="small" numberOfLines={1}>
+                      {item.itens[0]?.produto?.nome ?? 'Produto removido'}
+                    </ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                      {item.usuario.nome} · {dataHora(item.createdAt)}
+                    </ThemedText>
+                  </View>
+                </View>
+              </Pressable>
+            );
+          }}
         />
       ) : (
         <View style={styles.centered}>
@@ -122,8 +149,17 @@ export default function AdminPedidosScreen() {
                     Itens
                   </ThemedText>
                   {aberto.itens.map((item) => (
-                    <View key={item.id} style={styles.itemLinha}>
-                      <ThemedText type="small" numberOfLines={1} style={styles.itemNome}>
+                    <View key={item.id} style={styles.itemComFoto}>
+                      {item.produto?.imagemUrl ? (
+                        <Image
+                          source={{ uri: item.produto.imagemUrl }}
+                          style={styles.itemThumb}
+                          contentFit="cover"
+                        />
+                      ) : (
+                        <View style={[styles.itemThumb, { backgroundColor: theme.secondary }]} />
+                      )}
+                      <ThemedText type="small" numberOfLines={2} style={styles.itemNome}>
                         {item.quantidade}x {item.produto?.nome ?? 'Produto removido'}
                       </ThemedText>
                       <ThemedText type="small" themeColor="textSecondary">
@@ -228,13 +264,50 @@ const styles = StyleSheet.create({
   card: {
     padding: Spacing.three,
     borderRadius: Radius.medium,
+  },
+  cardTopo: {
+    flexDirection: 'row',
+    gap: Spacing.three,
+  },
+  cardTexto: {
+    flex: 1,
     gap: Spacing.half,
   },
   cardLinha: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Spacing.one,
+    gap: Spacing.two,
+  },
+  thumb: {
+    width: 56,
+    height: 56,
+    borderRadius: Radius.small,
+  },
+  contador: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  contadorTexto: {
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  itemComFoto: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  itemThumb: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.small,
   },
   backdrop: {
     flex: 1,
