@@ -58,12 +58,12 @@ export default function RootLayout() {
                 options={{
                   headerShown: true,
                   title: '',
-                  headerTitleAlign: 'center',
-                  headerTitle: () => (
+                  headerTintColor: '#FFFFFF',
+                  headerBackground: () => (
                     <Image
-                      source={require('@/assets/images/hero-logo.png')}
-                      style={{ height: '100%', aspectRatio: 16 / 9 }}
-                      contentFit="contain"
+                      source={require('@/assets/images/header-banner.jpg')}
+                      style={{ width: '100%', height: '100%' }}
+                      contentFit="cover"
                     />
                   ),
                 }}
