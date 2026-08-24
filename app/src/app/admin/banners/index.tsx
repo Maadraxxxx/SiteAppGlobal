@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { FormSection } from '@/components/FormSection';
 import { ImageUploadField } from '@/components/ImageUploadField';
@@ -14,10 +15,31 @@ export default function AdminBannersScreen() {
   const createMutation = useCreateBanner();
   const removeMutation = useRemoveBanner();
   const theme = useTheme();
+  const [error, setError] = useState<string>();
+  const [removendoId, setRemovendoId] = useState<string>();
 
   async function handleAdd(url: string | undefined) {
     if (!url) return;
-    await createMutation.mutateAsync(url);
+    setError(undefined);
+    try {
+      await createMutation.mutateAsync(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao adicionar a foto');
+    }
+  }
+
+  // mutate() engole a falha em silencio — com mutateAsync da pra avisar
+  // quando a exclusao nao foi, em vez da foto so continuar ali sem explicacao.
+  async function handleRemove(id: string) {
+    setError(undefined);
+    setRemovendoId(id);
+    try {
+      await removeMutation.mutateAsync(id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao excluir a foto');
+    } finally {
+      setRemovendoId(undefined);
+    }
   }
 
   return (
@@ -31,6 +53,12 @@ export default function AdminBannersScreen() {
         <ImageUploadField aspect={[1, 1]} boxWidth={200} onChange={handleAdd} />
       </FormSection>
 
+      {error ? (
+        <ThemedText type="small" themeColor="danger">
+          {error}
+        </ThemedText>
+      ) : null}
+
       {isLoading ? (
         <ActivityIndicator />
       ) : (
@@ -42,8 +70,16 @@ export default function AdminBannersScreen() {
           renderItem={({ item }) => (
             <View style={[styles.row, { backgroundColor: theme.backgroundElement }]}>
               <Image source={{ uri: item.imagemUrl }} style={styles.thumb} contentFit="cover" />
-              <Pressable onPress={() => removeMutation.mutate(item.id)} hitSlop={8} style={styles.removeButton}>
-                <Ionicons name="trash" size={18} color={theme.danger} />
+              <Pressable
+                onPress={() => handleRemove(item.id)}
+                disabled={!!removendoId}
+                hitSlop={8}
+                style={styles.removeButton}>
+                {removendoId === item.id ? (
+                  <ActivityIndicator size="small" color={theme.danger} />
+                ) : (
+                  <Ionicons name="trash" size={18} color={theme.danger} />
+                )}
               </Pressable>
             </View>
           )}

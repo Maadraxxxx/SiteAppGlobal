@@ -21,7 +21,11 @@ interface RequestOptions {
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const token = await tokenStorage.get();
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const headers: Record<string, string> = {};
+  // So declara JSON quando existe corpo: o Fastify recusa com 500
+  // (FST_ERR_CTP_EMPTY_JSON_BODY) uma requisicao que diz ser application/json
+  // e vem vazia — era o que quebrava todo DELETE do app.
+  if (options.body !== undefined) headers['Content-Type'] = 'application/json';
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const response = await fetch(`${API_URL}${path}`, {
