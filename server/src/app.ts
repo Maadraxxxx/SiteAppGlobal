@@ -8,6 +8,7 @@ import { HttpError } from './lib/http-error';
 import authRoutes from './modules/auth/routes';
 import bannersRoutes from './modules/banners/routes';
 import categoriasRoutes from './modules/categorias/routes';
+import enderecosRoutes from './modules/enderecos/routes';
 import estilosRoutes from './modules/estilos/routes';
 import formatosRoutes from './modules/formatos/routes';
 import freteRoutes from './modules/frete/routes';
@@ -36,11 +37,7 @@ export function buildApp() {
       });
     }
     app.log.error(error);
-    return reply.code(500).send({
-      error: { code: 'INTERNAL_ERROR', message: 'Erro interno' },
-      // DEBUG TEMPORARIO — remover assim que o frete for diagnosticado
-      debug: { name: error.name, message: error.message },
-    });
+    return reply.code(500).send({ error: { code: 'INTERNAL_ERROR', message: 'Erro interno' } });
   });
 
   app.get('/health', async () => ({ ok: true }));
@@ -51,6 +48,7 @@ export function buildApp() {
       api.register(bannersRoutes);
       api.register(categoriasRoutes);
       api.register(formatosRoutes);
+      api.register(enderecosRoutes);
       api.register(estilosRoutes);
       api.register(freteRoutes);
       api.register(pagamentosRoutes);

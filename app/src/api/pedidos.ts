@@ -7,7 +7,8 @@ export interface ItemEntrada {
 }
 
 export interface FreteEscolhido {
-  cep: string;
+  /** endereço salvo do cliente — o servidor pega o CEP dele */
+  enderecoId: string;
   servicoId: number;
 }
 

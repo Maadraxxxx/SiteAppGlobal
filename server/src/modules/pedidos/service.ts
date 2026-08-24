@@ -1,6 +1,7 @@
 import { Prisma, StatusPedido } from '@prisma/client';
 import { prisma } from '../../db/prisma';
 import { badRequest, notFound } from '../../lib/http-error';
+import { get as getEndereco } from '../enderecos/service';
 import { precoDoServico } from '../frete/service';
 
 // "Arrecadado" e dinheiro que de fato entrou, entao pedido ainda aguardando
@@ -50,7 +51,8 @@ export interface ItemEntrada {
 }
 
 export interface FreteEntrada {
-  cep: string;
+  /** endereco salvo do cliente; o CEP sai dele, nao do que o app manda */
+  enderecoId: string;
   /** id do servico no Melhor Envio; o preco a gente reconfere com eles */
   servicoId: number;
 }
@@ -95,11 +97,22 @@ export async function criarPedido(usuarioId: string, itens: ItemEntrada[], frete
   let total = subtotal;
 
   if (frete) {
-    const escolhido = await precoDoServico(frete.cep, itens, frete.servicoId);
+    // O endereco vem do banco (e do proprio usuario), entao o CEP cotado e o
+    // que ele cadastrou — nao um que o app pudesse forjar pra baratear o frete.
+    const endereco = await getEndereco(frete.enderecoId, usuarioId);
+    const escolhido = await precoDoServico(endereco.cep, itens, frete.servicoId);
     const valor = new Prisma.Decimal(escolhido.preco);
     total = subtotal.add(valor);
     dadosFrete = {
-      cepDestino: frete.cep,
+      cepDestino: endereco.cep,
+      // Copia do endereco: se ele for editado ou apagado depois, o pedido
+      // continua mostrando pra onde foi enviado de fato.
+      enderecoLogradouro: endereco.logradouro,
+      enderecoNumero: endereco.numero,
+      enderecoComplemento: endereco.complemento,
+      enderecoBairro: endereco.bairro,
+      enderecoCidade: endereco.cidade,
+      enderecoUf: endereco.uf,
       freteValor: valor,
       freteServico: escolhido.nome,
       freteTransportadora: escolhido.transportadora,

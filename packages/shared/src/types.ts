@@ -134,6 +134,30 @@ export interface OpcaoFrete {
   prazoDias: number;
 }
 
+export interface Endereco {
+  id: string;
+  apelido: string | null;
+  cep: string;
+  logradouro: string;
+  numero: string;
+  complemento: string | null;
+  bairro: string;
+  cidade: string;
+  uf: string;
+  principal: boolean;
+}
+
+export type EnderecoInput = Omit<Endereco, 'id' | 'principal'> & { principal?: boolean };
+
+/** Retorno do ViaCEP, usado pra preencher o formulário sozinho. */
+export interface EnderecoPorCep {
+  cep: string;
+  logradouro: string;
+  bairro: string;
+  cidade: string;
+  uf: string;
+}
+
 export interface ApiError {
   error: {
     code: string;

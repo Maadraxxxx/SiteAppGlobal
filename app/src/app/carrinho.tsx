@@ -1,17 +1,13 @@
-import type { OpcaoFrete } from '@global-decora/shared';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
-import { CalculadoraFrete } from '@/components/CalculadoraFrete';
 import { Screen } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useCart, type CartItem } from '@/context/CartContext';
-import { useCriarPedido } from '@/hooks/usePedidos';
 import { ROTAS } from '@/lib/rotas';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -65,35 +61,12 @@ function CartRow({ item }: { item: CartItem }) {
 export default function CarrinhoScreen() {
   const { items, totalPreco, clear } = useCart();
   const { usuario } = useAuth();
-  const criarPedido = useCriarPedido();
-  const [error, setError] = useState<string>();
-  const [cep, setCep] = useState('');
-  const [frete, setFrete] = useState<OpcaoFrete>();
   const theme = useTheme();
 
-  const itensParaApi = items.map((item) => ({
-    produtoId: item.produto.id,
-    quantidade: item.quantidade,
-  }));
-  const total = totalPreco + (frete?.preco ?? 0);
 
-  async function handleFinalizar() {
-    if (!usuario) {
-      router.push('/(auth)/login');
-      return;
-    }
-    setError(undefined);
-    try {
-      const { pedido } = await criarPedido.mutateAsync({
-        itens: itensParaApi,
-        frete: frete ? { cep: cep.replace(/\D/g, ''), servicoId: frete.id } : undefined,
-      });
-      // O carrinho ja virou pedido; manter os itens faria o cliente pedir de novo sem querer.
-      clear();
-      router.replace(ROTAS.pagamento(pedido.id));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Nao foi possivel criar o pedido');
-    }
+  function handleFinalizar() {
+    // O checkout cuida de endereco, frete e confirmacao; aqui e so a passagem.
+    router.push(usuario ? ROTAS.checkout : '/(auth)/login');
   }
 
   if (!items.length) {
@@ -119,51 +92,16 @@ export default function CarrinhoScreen() {
       />
 
       <View style={[styles.summary, { borderColor: theme.border }]}>
-        <CalculadoraFrete
-          itens={itensParaApi}
-          cep={cep}
-          onCepChange={setCep}
-          selecionado={frete}
-          onSelecionar={setFrete}
-        />
-
         <View style={styles.summaryRow}>
-          <ThemedText type="small" themeColor="textSecondary">
-            Produtos
-          </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
+          <ThemedText type="smallBold">Total</ThemedText>
+          <ThemedText type="smallBold" themeColor="primary">
             R$ {totalPreco.toFixed(2).replace('.', ',')}
           </ThemedText>
         </View>
 
-        {frete ? (
-          <View style={styles.summaryRow}>
-            <ThemedText type="small" themeColor="textSecondary">
-              Frete ({frete.nome})
-            </ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              R$ {frete.preco.toFixed(2).replace('.', ',')}
-            </ThemedText>
-          </View>
-        ) : null}
-
-        <View style={styles.summaryRow}>
-          <ThemedText type="smallBold">Total</ThemedText>
-          <ThemedText type="smallBold" themeColor="primary">
-            R$ {total.toFixed(2).replace('.', ',')}
-          </ThemedText>
-        </View>
-
-        {error ? (
-          <ThemedText type="small" themeColor="danger" style={styles.aviso}>
-            {error}
-          </ThemedText>
-        ) : null}
-
         <Button
           title={usuario ? 'Finalizar compra' : 'Entrar para finalizar'}
           onPress={handleFinalizar}
-          loading={criarPedido.isPending}
         />
         <Button title="Esvaziar carrinho" variant="ghost" onPress={clear} />
       </View>
@@ -236,8 +174,5 @@ const styles = StyleSheet.create({
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  aviso: {
-    textAlign: 'center',
   },
 });

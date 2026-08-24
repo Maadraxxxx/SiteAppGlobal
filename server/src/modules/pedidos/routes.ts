@@ -9,7 +9,7 @@ const criarSchema = z.object({
   itens: z
     .array(z.object({ produtoId: z.string().uuid(), quantidade: z.number().int().positive() }))
     .min(1),
-  frete: z.object({ cep: z.string().min(8), servicoId: z.number().int() }).optional(),
+  frete: z.object({ enderecoId: z.string().uuid(), servicoId: z.number().int() }).optional(),
 });
 
 const statusSchema = z.object({ status: z.nativeEnum(StatusPedido) });

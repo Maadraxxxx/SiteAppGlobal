@@ -9,6 +9,7 @@ import { Screen } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { ROTAS } from '@/lib/rotas';
 import { useTheme } from '@/hooks/use-theme';
 
 function iniciaisDe(nome: string) {
@@ -162,6 +163,12 @@ export default function PerfilScreen() {
           label="Meus Pedidos"
           descricao="Acompanhe o que você já pediu"
           onPress={() => router.push('/pedidos')}
+        />
+        <MenuRow
+          icon="location-outline"
+          label="Meus Endereços"
+          descricao="Onde você recebe os pedidos"
+          onPress={() => router.push(ROTAS.enderecos)}
         />
         <MenuRow
           icon="person-outline"

@@ -63,6 +63,7 @@ model Usuario {
 
   pedidos          Pedido[]
   kitsCustomizados KitCustomizado[]
+  enderecos        Endereco[]
 
   @@map("usuarios")
 }
@@ -118,18 +119,18 @@ model Banner {
 }
 
 model Produto {
-  id        String   @id @default(uuid())
-  nome      String
-  descricao String?
+  id          String   @id @default(uuid())
+  nome        String
+  descricao   String?
   preco       Decimal  @db.Decimal(10, 2)
   comprimento Decimal? @db.Decimal(10, 2) // cm
   largura     Decimal? @db.Decimal(10, 2) // cm
   altura      Decimal? @db.Decimal(10, 2) // cm
   peso        Decimal? @db.Decimal(10, 3) // kg
   imagemUrl   String?
-  ativo     Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  ativo       Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   categoriaId String
   categoria   Categoria @relation(fields: [categoriaId], references: [id])
@@ -146,6 +147,30 @@ model Produto {
   @@index([formatoId])
   @@index([estiloId])
   @@map("produtos")
+}
+
+model Endereco {
+  id        String  @id @default(uuid())
+  usuarioId String
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  apelido     String? // "Casa", "Trabalho"
+  cep         String
+  logradouro  String
+  numero      String
+  complemento String?
+  bairro      String
+  cidade      String
+  uf          String  @db.VarChar(2)
+
+  // o endereco marcado vem selecionado por padrao no checkout
+  principal Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([usuarioId])
+  @@map("enderecos")
 }
 
 model KitCustomizado {
@@ -192,11 +217,17 @@ model Pedido {
 
   // Frete escolhido no carrinho (Melhor Envio). Nulo em pedido feito antes
   // de existir calculo de frete, ou em retirada.
-  cepDestino     String?
-  freteValor     Decimal? @db.Decimal(10, 2)
-  freteServico   String? // ex: "PAC", "SEDEX", "Jadlog .Package"
+  cepDestino          String?
+  enderecoLogradouro  String?
+  enderecoNumero      String?
+  enderecoComplemento String?
+  enderecoBairro      String?
+  enderecoCidade      String?
+  enderecoUf          String?
+  freteValor          Decimal? @db.Decimal(10, 2)
+  freteServico        String? // ex: "PAC", "SEDEX", "Jadlog .Package"
   freteTransportadora String?
-  fretePrazoDias Int?
+  fretePrazoDias      Int?
 
   itens      ItemPedido[]
   pagamentos Pagamento[]

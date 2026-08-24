@@ -10,6 +10,8 @@ type Href = Parameters<typeof router.push>[0];
  * strings direto, com a checagem de rota de volta.
  */
 export const ROTAS = {
+  checkout: '/checkout' as Href,
+  enderecos: '/enderecos' as Href,
   adminPedidos: '/admin/pedidos' as Href,
   adminCarrossel: '/admin/banners' as Href,
   pagamento: (pedidoId: string) => `/pagamento/${pedidoId}` as Href,
