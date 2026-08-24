@@ -20,6 +20,7 @@ export default function AdminLayout() {
   return (
     <Stack screenOptions={{ headerShown: true }}>
       <Stack.Screen name="index" options={{ title: 'Painel Admin' }} />
+      <Stack.Screen name="pedidos/index" options={{ title: 'Pedidos' }} />
       <Stack.Screen name="produtos/index" options={{ title: 'Produtos' }} />
       <Stack.Screen name="produtos/[id]" options={{ title: 'Produto' }} />
       <Stack.Screen name="banners/index" options={{ title: 'Carrossel da Home' }} />

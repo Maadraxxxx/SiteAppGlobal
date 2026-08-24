@@ -81,6 +81,43 @@ export interface ResumoPedidosMes {
   arrecadado: string;
 }
 
+export type StatusPedido =
+  | 'AGUARDANDO_PAGAMENTO'
+  | 'PAGO'
+  | 'EM_PRODUCAO'
+  | 'ENVIADO'
+  | 'CONCLUIDO'
+  | 'CANCELADO';
+
+export type StatusPagamento = 'PENDENTE' | 'APROVADO' | 'REJEITADO' | 'CANCELADO';
+
+export interface ItemPedido {
+  id: string;
+  quantidade: number;
+  precoUnitario: string;
+  produto: Produto | null;
+}
+
+export interface Pagamento {
+  id: string;
+  metodo: 'PIX' | 'CARTAO';
+  status: StatusPagamento;
+  valor: string;
+  qrCodeBase64: string | null;
+  qrCodeCopiaCola: string | null;
+  createdAt: string;
+}
+
+export interface Pedido {
+  id: string;
+  status: StatusPedido;
+  total: string;
+  createdAt: string;
+  itens: ItemPedido[];
+  pagamentos: Pagamento[];
+  usuario: { id: string; nome: string; email: string };
+}
+
 export interface ApiError {
   error: {
     code: string;

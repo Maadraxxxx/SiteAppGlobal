@@ -7,17 +7,13 @@ import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
+import { ROTAS } from '@/lib/rotas';
 import { useResumoPedidosMes } from '@/hooks/usePedidos';
 import { useAdminProdutos } from '@/hooks/useProdutos';
 import { useTheme } from '@/hooks/use-theme';
 
 const RECENTES = 4;
 
-// A rota existe (admin/banners/index.tsx) e navega normal, mas o router.d.ts
-// que o Expo gera esta desatualizado nesta sessao do dev server: ele ainda
-// lista as telas de categoria que ja foram removidas e nao lista /admin/banners.
-// Reiniciando o `npm run dev` o arquivo e regerado e este cast pode sair.
-const ROTA_CARROSSEL = '/admin/banners' as Parameters<typeof router.push>[0];
 
 function moeda(valor: string | number) {
   const [inteiro, centavos] = (Number(valor) || 0).toFixed(2).split('.');
@@ -136,7 +132,12 @@ export default function AdminDashboard() {
         </View>
 
         <View style={styles.stats}>
-          <StatCard icon="receipt-outline" valor={resumo?.quantidade ?? 0} label="Pedidos no mês" />
+          <StatCard
+            icon="receipt-outline"
+            valor={resumo?.quantidade ?? 0}
+            label="Pedidos no mês"
+            onPress={() => router.push(ROTAS.adminPedidos)}
+          />
           <StatCard
             icon="cube-outline"
             valor={totalProdutos}
@@ -152,7 +153,10 @@ export default function AdminDashboard() {
           <Button title="Novo produto" onPress={() => router.push('/admin/produtos/novo')} />
         </View>
         <View style={styles.acaoBotao}>
-          <Button title="Carrossel" variant="ghost" onPress={() => router.push(ROTA_CARROSSEL)} />
+          <Button title="Pedidos" variant="ghost" onPress={() => router.push(ROTAS.adminPedidos)} />
+        </View>
+        <View style={styles.acaoBotao}>
+          <Button title="Carrossel" variant="ghost" onPress={() => router.push(ROTAS.adminCarrossel)} />
         </View>
       </View>
 

@@ -70,6 +70,7 @@ export default function RootLayout() {
               />
               <Stack.Screen name="carrinho" options={{ headerShown: true, title: 'Carrinho' }} />
               <Stack.Screen name="pedidos" options={{ headerShown: true, title: 'Meus Pedidos' }} />
+              <Stack.Screen name="pagamento/[id]" options={{ headerShown: true, title: 'Pagamento' }} />
               <Stack.Screen name="editar-perfil" options={{ headerShown: true, title: 'Editar Perfil' }} />
               <Stack.Screen name="admin" />
               <Stack.Screen name="+not-found" />

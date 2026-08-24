@@ -7,7 +7,10 @@ import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
 import { useCart, type CartItem } from '@/context/CartContext';
+import { useCriarPedido } from '@/hooks/usePedidos';
+import { ROTAS } from '@/lib/rotas';
 import { useTheme } from '@/hooks/use-theme';
 
 function CartRow({ item }: { item: CartItem }) {
@@ -59,8 +62,28 @@ function CartRow({ item }: { item: CartItem }) {
 
 export default function CarrinhoScreen() {
   const { items, totalPreco, clear } = useCart();
-  const [avisoCheckout, setAvisoCheckout] = useState(false);
+  const { usuario } = useAuth();
+  const criarPedido = useCriarPedido();
+  const [error, setError] = useState<string>();
   const theme = useTheme();
+
+  async function handleFinalizar() {
+    if (!usuario) {
+      router.push('/(auth)/login');
+      return;
+    }
+    setError(undefined);
+    try {
+      const { pedido } = await criarPedido.mutateAsync(
+        items.map((item) => ({ produtoId: item.produto.id, quantidade: item.quantidade })),
+      );
+      // O carrinho ja virou pedido; manter os itens faria o cliente pedir de novo sem querer.
+      clear();
+      router.replace(ROTAS.pagamento(pedido.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Nao foi possivel criar o pedido');
+    }
+  }
 
   if (!items.length) {
     return (
@@ -92,13 +115,17 @@ export default function CarrinhoScreen() {
           </ThemedText>
         </View>
 
-        {avisoCheckout ? (
-          <ThemedText type="small" themeColor="textSecondary" style={styles.aviso}>
-            O pagamento ainda não está disponível — essa parte chega na próxima etapa.
+        {error ? (
+          <ThemedText type="small" themeColor="danger" style={styles.aviso}>
+            {error}
           </ThemedText>
         ) : null}
 
-        <Button title="Finalizar compra" onPress={() => setAvisoCheckout(true)} />
+        <Button
+          title={usuario ? 'Finalizar compra' : 'Entrar para finalizar'}
+          onPress={handleFinalizar}
+          loading={criarPedido.isPending}
+        />
         <Button title="Esvaziar carrinho" variant="ghost" onPress={clear} />
       </View>
     </Screen>

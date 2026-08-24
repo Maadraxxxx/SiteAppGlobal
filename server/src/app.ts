@@ -10,6 +10,7 @@ import bannersRoutes from './modules/banners/routes';
 import categoriasRoutes from './modules/categorias/routes';
 import estilosRoutes from './modules/estilos/routes';
 import formatosRoutes from './modules/formatos/routes';
+import pagamentosRoutes from './modules/pagamentos/routes';
 import pedidosRoutes from './modules/pedidos/routes';
 import produtosRoutes from './modules/produtos/routes';
 import uploadsRoutes from './modules/uploads/routes';
@@ -46,6 +47,7 @@ export function buildApp() {
       api.register(categoriasRoutes);
       api.register(formatosRoutes);
       api.register(estilosRoutes);
+      api.register(pagamentosRoutes);
       api.register(pedidosRoutes);
       api.register(produtosRoutes);
       api.register(uploadsRoutes);
