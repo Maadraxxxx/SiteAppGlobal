@@ -14,10 +14,12 @@ import { useBanners } from '@/hooks/useBanners';
 import { useTheme } from '@/hooks/use-theme';
 
 const INTERVALO_MS = 4000;
-// Os banners sao quadrados: sem um teto de largura a hero viraria um quadrado
-// gigante no desktop. Limitar a largura mantem a imagem quadrada e sem corte,
-// so que num tamanho razoavel em tela grande.
+// Teto de largura pra hero nao virar um bloco gigante no desktop.
 const MAX_LARGURA = 520;
+// Os banners sao quadrados, mas um quadrado inteiro come tela demais na Home.
+// Em 4:3 o corte cai nas bordas de cima e de baixo — justamente onde as fotos
+// de estudio tem mais fundo vazio — e a peca continua enquadrada.
+const PROPORCAO = 4 / 3;
 
 export function HeroCarousel() {
   const { data } = useBanners();
@@ -28,6 +30,7 @@ export function HeroCarousel() {
   // lateral, entao a conta da janela ja da a largura real do slide.
   const { width: windowWidth } = useWindowDimensions();
   const slideWidth = Math.min(windowWidth - Spacing.four * 2, MAX_LARGURA);
+  const slideHeight = Math.round(slideWidth / PROPORCAO);
 
   const scrollRef = useRef<ScrollView>(null);
   const [index, setIndex] = useState(0);
@@ -61,7 +64,7 @@ export function HeroCarousel() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.viewport, { width: slideWidth, height: slideWidth }]}>
+      <View style={[styles.viewport, { width: slideWidth, height: slideHeight }]}>
         <ScrollView
           ref={scrollRef}
           horizontal
@@ -74,7 +77,7 @@ export function HeroCarousel() {
               source={{ uri: item.imagemUrl }}
               // Altura em pixel (e nao '100%'): dentro de um ScrollView horizontal
               // a altura percentual nao tem de quem herdar e colapsa pra zero.
-              style={{ width: slideWidth, height: slideWidth }}
+              style={{ width: slideWidth, height: slideHeight }}
               contentFit="cover"
             />
           ))}

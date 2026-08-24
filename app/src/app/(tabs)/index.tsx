@@ -9,7 +9,6 @@ import { Screen } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
-import { useCategorias } from '@/hooks/useCatalogo';
 import { useProdutos } from '@/hooks/useProdutos';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -35,11 +34,9 @@ function SectionHeader({ titulo, acao }: { titulo: string; acao?: { label: strin
 export default function HomeScreen() {
   const theme = useTheme();
   const { usuario } = useAuth();
-  const categorias = useCategorias();
   const produtos = useProdutos();
 
   const primeiroNome = usuario?.nome?.trim().split(' ')[0];
-  const listaCategorias = categorias.data?.items ?? [];
   const destaques = produtos.data?.items.slice(0, 8) ?? [];
 
   return (
@@ -59,31 +56,6 @@ export default function HomeScreen() {
       </View>
 
       <HeroCarousel />
-
-      {listaCategorias.length ? (
-        <View style={styles.section}>
-          <SectionHeader titulo="Categorias" />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.rowBleed}
-            contentContainerStyle={styles.rowContent}>
-            {listaCategorias.map((categoria) => (
-              <Pressable
-                key={categoria.id}
-                onPress={() =>
-                  router.push({ pathname: '/(tabs)/catalogo', params: { categoria: categoria.slug } })
-                }
-                style={({ pressed }) => [
-                  styles.categoriaPill,
-                  { backgroundColor: theme.backgroundElement, borderColor: theme.border, opacity: pressed ? 0.7 : 1 },
-                ]}>
-                <ThemedText type="smallBold">{categoria.nome}</ThemedText>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
-      ) : null}
 
       {destaques.length ? (
         <View style={styles.section}>
@@ -162,24 +134,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 26,
   },
-  // Deixa as listas horizontais correrem ate a borda da tela, furando o
-  // padding lateral do Screen, mas mantendo o primeiro item alinhado ao texto.
+  // Deixa a vitrine correr ate a borda da tela, furando o padding lateral do
+  // Screen, mas mantendo o primeiro card alinhado com o texto das secoes.
   rowBleed: {
     marginHorizontal: -Spacing.four,
-  },
-  rowContent: {
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.two,
   },
   destaquesContent: {
     // ProductCard ja tem margin propria, entao aqui o padding compensa a folga.
     paddingHorizontal: Spacing.four - Spacing.two,
-  },
-  categoriaPill: {
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
   },
   iaCard: {
     flexDirection: 'row',
