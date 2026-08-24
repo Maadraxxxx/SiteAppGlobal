@@ -67,29 +67,31 @@ export default function ProdutoDetailScreen() {
         </Pressable>
       ) : null}
 
-      <ThemedText type="subtitle">{produto.nome}</ThemedText>
-      <ThemedText type="title" themeColor="primary" style={styles.preco}>
-        R$ {Number(produto.preco).toFixed(2).replace('.', ',')}
-      </ThemedText>
+      <View style={styles.infoBlock}>
+        <ThemedText type="subtitle">{produto.nome}</ThemedText>
+        <ThemedText type="title" themeColor="primary" style={styles.preco}>
+          R$ {Number(produto.preco).toFixed(2).replace('.', ',')}
+        </ThemedText>
 
-      <View style={styles.tags}>
-        {produto.formato ? <Tag label={produto.formato.nome} /> : null}
-        {produto.estilo ? <Tag label={produto.estilo.nome} /> : null}
-        {produto.categoria ? <Tag label={produto.categoria.nome} /> : null}
-      </View>
+        <View style={styles.tags}>
+          {produto.formato ? <Tag label={produto.formato.nome} /> : null}
+          {produto.estilo ? <Tag label={produto.estilo.nome} /> : null}
+          {produto.categoria ? <Tag label={produto.categoria.nome} /> : null}
+        </View>
 
-      {produto.descricao ? <ThemedText themeColor="textSecondary">{produto.descricao}</ThemedText> : null}
-
-      <View style={styles.specs}>
-        {produto.comprimento || produto.largura || produto.altura ? (
-          <ThemedText type="small" themeColor="textSecondary">
-            Dimensões: {produto.comprimento ?? '—'} x {produto.largura ?? '—'} x {produto.altura ?? '—'} cm
-            (C x L x A)
+        {produto.descricao ? (
+          <ThemedText themeColor="textSecondary" style={styles.descricao}>
+            {produto.descricao}
           </ThemedText>
         ) : null}
-        {produto.peso ? (
+
+        {produto.comprimento || produto.largura || produto.altura || produto.peso ? (
           <ThemedText type="small" themeColor="textSecondary">
-            Peso: {produto.peso} kg
+            {produto.comprimento || produto.largura || produto.altura
+              ? `${produto.comprimento ?? '—'} x ${produto.largura ?? '—'} x ${produto.altura ?? '—'} cm (C x L x A)`
+              : null}
+            {(produto.comprimento || produto.largura || produto.altura) && produto.peso ? '  •  ' : null}
+            {produto.peso ? `${produto.peso} kg` : null}
           </ThemedText>
         ) : null}
       </View>
@@ -185,17 +187,20 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     borderWidth: 1,
   },
+  infoBlock: {
+    gap: Spacing.two,
+  },
   preco: {
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 24,
+    lineHeight: 28,
   },
   tags: {
     flexDirection: 'row',
     gap: Spacing.two,
     flexWrap: 'wrap',
   },
-  specs: {
-    gap: Spacing.one,
+  descricao: {
+    lineHeight: 20,
   },
   comprarRow: {
     flexDirection: 'row',
