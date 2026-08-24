@@ -18,12 +18,23 @@ interface TagSelectorProps {
   onSelect: (id: string) => void;
   onCreate: (nome: string) => Promise<{ item: TagOption }>;
   creating?: boolean;
+  /** Concorda o "Novo/Nova" com o substantivo do label (categoria e feminino). */
+  genero?: 'm' | 'f';
 }
 
-export function TagSelector({ label, options, selectedId, onSelect, onCreate, creating }: TagSelectorProps) {
+export function TagSelector({
+  label,
+  options,
+  selectedId,
+  onSelect,
+  onCreate,
+  creating,
+  genero = 'm',
+}: TagSelectorProps) {
   const [adding, setAdding] = useState(false);
   const [novoNome, setNovoNome] = useState('');
   const [error, setError] = useState<string>();
+  const novo = genero === 'f' ? 'Nova' : 'Novo';
 
   async function handleCreate() {
     if (!novoNome.trim()) return;
@@ -54,14 +65,14 @@ export function TagSelector({ label, options, selectedId, onSelect, onCreate, cr
               onPress={() => onSelect(option.id)}
             />
           ))}
-          <Chip label="+ Novo" selected={adding} onPress={() => setAdding((prev) => !prev)} />
+          <Chip label={`+ ${novo}`} selected={adding} onPress={() => setAdding((prev) => !prev)} />
         </View>
       </ScrollView>
 
       {adding ? (
         <View style={styles.addRow}>
           <View style={styles.addField}>
-            <TextField label={`Novo ${label.toLowerCase()}`} value={novoNome} onChangeText={setNovoNome} />
+            <TextField label={`${novo} ${label.toLowerCase()}`} value={novoNome} onChangeText={setNovoNome} />
           </View>
           <Button title="Criar" onPress={handleCreate} loading={creating} />
         </View>

@@ -1,8 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
-import { Chip } from '@/components/Chip';
 import { FormSection } from '@/components/FormSection';
 import { ImageUploadField } from '@/components/ImageUploadField';
 import { Screen } from '@/components/Screen';
@@ -10,7 +9,7 @@ import { TagSelector } from '@/components/TagSelector';
 import { TextField } from '@/components/TextField';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-import { estilosHooks, formatosHooks, useCategorias } from '@/hooks/useCatalogo';
+import { estilosHooks, formatosHooks, useCategorias, useCreateCategoria } from '@/hooks/useCatalogo';
 import { useAdminProduto, useCreateProduto, useUpdateProduto } from '@/hooks/useProdutos';
 
 export default function AdminProdutoFormScreen() {
@@ -21,6 +20,7 @@ export default function AdminProdutoFormScreen() {
   const categorias = useCategorias();
   const formatos = formatosHooks.useList();
   const estilos = estilosHooks.useList();
+  const createCategoria = useCreateCategoria();
   const createFormato = formatosHooks.useCreate();
   const createEstilo = estilosHooks.useCreate();
   const createMutation = useCreateProduto();
@@ -131,23 +131,19 @@ export default function AdminProdutoFormScreen() {
       </FormSection>
 
       <FormSection title="Classificação">
-        <View style={styles.pickerGroup}>
-          <ThemedText type="small" themeColor="textSecondary">
-            Categoria
-          </ThemedText>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.chipRow}>
-              {categorias.data?.items.map((categoria) => (
-                <Chip
-                  key={categoria.id}
-                  label={categoria.nome}
-                  selected={categoriaId === categoria.id}
-                  onPress={() => setCategoriaId(categoria.id)}
-                />
-              ))}
-            </View>
-          </ScrollView>
-        </View>
+        <TagSelector
+          label="Categoria"
+          genero="f"
+          options={categorias.data?.items ?? []}
+          selectedId={categoriaId}
+          onSelect={setCategoriaId}
+          onCreate={async (nome) => {
+            // A API de categoria responde { categoria }, o TagSelector espera { item }.
+            const { categoria } = await createCategoria.mutateAsync({ nome });
+            return { item: categoria };
+          }}
+          creating={createCategoria.isPending}
+        />
 
         <TagSelector
           label="Formato"
@@ -189,13 +185,5 @@ const styles = StyleSheet.create({
   },
   dimensionField: {
     flex: 1,
-  },
-  pickerGroup: {
-    gap: Spacing.one,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-    paddingVertical: Spacing.one,
   },
 });

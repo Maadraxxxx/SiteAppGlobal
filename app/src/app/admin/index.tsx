@@ -6,8 +6,9 @@ import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
+// Categoria, formato e estilo sao criados dentro do formulario do produto,
+// entao nao tem tela propria aqui.
 const LINKS = [
-  { href: '/admin/categorias', label: 'Categorias', icon: 'folder' as const },
   { href: '/admin/produtos', label: 'Produtos', icon: 'cube' as const },
   { href: '/admin/banners', label: 'Carrossel', icon: 'images' as const },
 ];

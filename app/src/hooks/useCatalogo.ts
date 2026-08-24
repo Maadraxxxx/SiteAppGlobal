@@ -6,36 +6,11 @@ export function useCategorias() {
   return useQuery({ queryKey: ['categorias'], queryFn: () => categoriasApi.list() });
 }
 
-export function useCategoria(id: string | undefined) {
-  return useQuery({
-    queryKey: ['categoria', id],
-    queryFn: () => categoriasApi.get(id as string),
-    enabled: !!id,
-  });
-}
-
 export function useCreateCategoria() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ nome, descricao }: { nome: string; descricao?: string }) =>
       categoriasApi.create(nome, descricao),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['categorias'] }),
-  });
-}
-
-export function useUpdateCategoria() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, nome, descricao }: { id: string; nome: string; descricao?: string }) =>
-      categoriasApi.update(id, nome, descricao),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['categorias'] }),
-  });
-}
-
-export function useRemoveCategoria() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => categoriasApi.remove(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['categorias'] }),
   });
 }
