@@ -169,15 +169,18 @@ export function IntroVideo({ onFim }: { onFim: () => void }) {
 
   return (
     <View ref={containerRef} style={styles.container}>
-      {/* Fica atrás do vídeo. Se ele tocar, some coberto; enquanto carrega, é
-          isso que o cliente vê — a marca, não um retângulo preto. */}
-      <View style={styles.fundo}>
-        <Image
-          source={require('@/assets/images/hero-logo.png')}
-          style={styles.fundoLogo}
-          contentFit="contain"
-        />
-      </View>
+      {/* Só enquanto o vídeo não tomou conta da tela: é o que o cliente vê
+          carregando — a marca, não um retângulo preto. Sai de cena assim que
+          a reprodução começa, pra não ficar plantada em cima do vídeo. */}
+      {fase === 'tocando' ? null : (
+        <View style={styles.fundo}>
+          <Image
+            source={require('@/assets/images/hero-logo.png')}
+            style={styles.fundoLogo}
+            contentFit="contain"
+          />
+        </View>
+      )}
 
       <VideoView
         player={player}
@@ -221,17 +224,21 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.primary,
     zIndex: 100,
   },
+  // O empilhamento e todo explicito: no CSS um elemento posicionado pinta
+  // acima de um estatico, entao sem zIndex a logo de fundo cobria o video.
   fundo: {
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 0,
   },
   fundoLogo: {
     width: 180,
     aspectRatio: 16 / 9,
   },
   video: {
-    flex: 1,
+    ...StyleSheet.absoluteFill,
+    zIndex: 1,
   },
   convite: {
     ...StyleSheet.absoluteFill,
@@ -239,6 +246,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.four,
     backgroundColor: Colors.light.primary,
+    zIndex: 2,
   },
   conviteChamada: {
     flexDirection: 'row',
@@ -260,6 +268,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     borderRadius: Radius.pill,
     backgroundColor: 'rgba(0,0,0,0.5)',
+    zIndex: 3,
   },
   pularTexto: {
     color: Colors.light.primaryText,
