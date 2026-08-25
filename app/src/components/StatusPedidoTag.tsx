@@ -10,14 +10,6 @@ export const ROTULO_PAGAMENTO: Record<StatusPagamentoPedido, string> = {
   CANCELADO: 'Cancelado',
 };
 
-// No filtro o título da linha já diz "Pagamento", então o chip não precisa
-// repetir a palavra — sem isso a linha fica larga demais no celular.
-export const ROTULO_PAGAMENTO_CURTO: Record<StatusPagamentoPedido, string> = {
-  AGUARDANDO: 'Aguardando',
-  PAGO: 'Pago',
-  CANCELADO: 'Cancelado',
-};
-
 // "Na fila" e nao "Aguardando": ao lado de "Aguardando pagamento" as duas
 // etiquetas ficariam iguais e ninguem saberia qual e qual.
 export const ROTULO_PRODUCAO: Record<StatusProducao, string> = {

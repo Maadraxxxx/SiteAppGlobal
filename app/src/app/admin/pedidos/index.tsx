@@ -2,25 +2,60 @@ import type { Pedido, StatusPagamentoPedido, StatusProducao } from '@global-deco
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Linking,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
 import { envioApi, urlDeDownload } from '@/api/envio';
 import { Button } from '@/components/Button';
 import { Screen, useMostrarBarraDeRolagem } from '@/components/Screen';
-import {
-  ROTULO_PAGAMENTO,
-  ROTULO_PAGAMENTO_CURTO,
-  ROTULO_PRODUCAO,
-  TagPagamento,
-  TagProducao,
-} from '@/components/StatusPedidoTag';
+import { ROTULO_PAGAMENTO, ROTULO_PRODUCAO, TagPagamento, TagProducao } from '@/components/StatusPedidoTag';
 import { TextField } from '@/components/TextField';
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing } from '@/constants/theme';
+import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useAdminPedidos, useAtualizarStatusPedido } from '@/hooks/usePedidos';
 import { useTheme } from '@/hooks/use-theme';
 
 const PAGAMENTOS: StatusPagamentoPedido[] = ['AGUARDANDO', 'PAGO', 'CANCELADO'];
 const PRODUCOES: StatusProducao[] = ['AGUARDANDO', 'EM_PRODUCAO', 'ENVIADO', 'ENTREGUE'];
+
+/** Um filtro aponta pra um eixo só — nunca cruza pagamento com produção. */
+type FiltroStatus =
+  | { eixo: 'pagamento'; valor: StatusPagamentoPedido }
+  | { eixo: 'producao'; valor: StatusProducao };
+
+/**
+ * Uma lista só, com os status dos dois eixos enfileirados. Escolher um troca o
+ * anterior: o admin filtra por "Pago" OU por "Em produção", nunca pelos dois
+ * ao mesmo tempo.
+ */
+const FILTROS: { chave: string; rotulo: string; filtro: FiltroStatus }[] = [
+  ...PAGAMENTOS.map((valor) => ({
+    chave: `pagamento-${valor}`,
+    rotulo: ROTULO_PAGAMENTO[valor],
+    filtro: { eixo: 'pagamento' as const, valor },
+  })),
+  ...PRODUCOES.map((valor) => ({
+    chave: `producao-${valor}`,
+    rotulo: ROTULO_PRODUCAO[valor],
+    filtro: { eixo: 'producao' as const, valor },
+  })),
+];
+
+/** Busca sem acento: "producao" acha "produção", "helloween" acha "Helloween". */
+function normalizar(texto: string) {
+  return texto
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
 
 function moeda(valor: string | number) {
   const [inteiro, centavos] = (Number(valor) || 0).toFixed(2).split('.');
@@ -36,59 +71,46 @@ function dataHora(iso: string) {
   });
 }
 
-/** Uma linha de chips: "Todos" mais um por status. Rola de lado no celular. */
-function LinhaDeFiltro<T extends string>({
-  titulo,
-  opcoes,
-  rotulo,
-  selecionado,
-  onSelecionar,
-}: {
-  titulo: string;
-  opcoes: T[];
-  rotulo: Record<T, string>;
-  selecionado: T | null;
-  onSelecionar: (valor: T | null) => void;
-}) {
+function Busca({ valor, onChange }: { valor: string; onChange: (v: string) => void }) {
   const theme = useTheme();
 
-  function Chip({ texto, ativo, onPress }: { texto: string; ativo: boolean; onPress: () => void }) {
-    return (
-      <Pressable
-        onPress={onPress}
-        style={[
-          styles.chip,
-          {
-            backgroundColor: ativo ? theme.primary : theme.backgroundElement,
-            borderColor: ativo ? theme.primary : theme.border,
-          },
-        ]}>
-        <ThemedText type="small" themeColor={ativo ? 'primaryText' : 'text'}>
-          {texto}
-        </ThemedText>
-      </Pressable>
-    );
-  }
+  return (
+    <View style={[styles.busca, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
+      <Ionicons name="search" size={18} color={theme.textSecondary} />
+      <TextInput
+        value={valor}
+        onChangeText={onChange}
+        placeholder="Buscar por cliente, produto ou código"
+        placeholderTextColor={theme.textSecondary}
+        style={[styles.buscaInput, { color: theme.text, fontFamily: Fonts.sans }]}
+        autoCorrect={false}
+      />
+      {valor ? (
+        <Pressable onPress={() => onChange('')} hitSlop={8}>
+          <Ionicons name="close-circle" size={18} color={theme.textSecondary} />
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+function Chip({ texto, ativo, onPress }: { texto: string; ativo: boolean; onPress: () => void }) {
+  const theme = useTheme();
 
   return (
-    <View style={styles.filtroLinha}>
-      <ThemedText type="small" themeColor="textSecondary">
-        {titulo}
+    <Pressable
+      onPress={onPress}
+      style={[
+        styles.chip,
+        {
+          backgroundColor: ativo ? theme.primary : theme.backgroundElement,
+          borderColor: ativo ? theme.primary : theme.border,
+        },
+      ]}>
+      <ThemedText type="small" themeColor={ativo ? 'primaryText' : 'text'}>
+        {texto}
       </ThemedText>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        <Chip texto="Todos" ativo={selecionado === null} onPress={() => onSelecionar(null)} />
-        {opcoes.map((opcao) => (
-          <Chip
-            key={opcao}
-            texto={rotulo[opcao]}
-            ativo={selecionado === opcao}
-            // Tocar de novo no que já está ativo desliga o filtro — é o que a
-            // mão espera, e evita ter que voltar no "Todos".
-            onPress={() => onSelecionar(selecionado === opcao ? null : opcao)}
-          />
-        ))}
-      </ScrollView>
-    </View>
+    </Pressable>
   );
 }
 
@@ -100,26 +122,43 @@ export default function AdminPedidosScreen() {
   const [codigoRastreio, setCodigoRastreio] = useState('');
   const [gerandoEtiqueta, setGerandoEtiqueta] = useState(false);
   const [salvandoRastreio, setSalvandoRastreio] = useState(false);
-  const [filtroPagamento, setFiltroPagamento] = useState<StatusPagamentoPedido | null>(null);
-  const [filtroProducao, setFiltroProducao] = useState<StatusProducao | null>(null);
+  const [termo, setTermo] = useState('');
+  const [chaveFiltro, setChaveFiltro] = useState<string | null>(null);
   const theme = useTheme();
   const mostrarBarra = useMostrarBarraDeRolagem();
 
   const todos = data?.items ?? [];
+  const filtro = FILTROS.find((f) => f.chave === chaveFiltro)?.filtro ?? null;
+  const busca = normalizar(termo.trim());
 
-  // Os dois filtros se somam: dá pra pedir "pago e ainda na fila", que é
-  // justamente a fila de produção do dia.
   const pedidos = useMemo(
     () =>
-      todos.filter(
-        (p) =>
-          (!filtroPagamento || p.statusPagamento === filtroPagamento) &&
-          (!filtroProducao || p.statusProducao === filtroProducao),
-      ),
-    [todos, filtroPagamento, filtroProducao],
+      todos.filter((p) => {
+        // O status escolhido vale pro eixo dele e só — o outro eixo não entra
+        // na conta, pra "Pago" não esconder o que está em produção.
+        if (filtro) {
+          const bate =
+            filtro.eixo === 'pagamento'
+              ? p.statusPagamento === filtro.valor
+              : p.statusProducao === filtro.valor;
+          if (!bate) return false;
+        }
+
+        if (!busca) return true;
+        const campos = [
+          p.usuario.nome,
+          p.usuario.email,
+          // Os 8 primeiros caracteres são o que o admin vê como "código".
+          p.id.slice(0, 8),
+          p.codigoRastreio ?? '',
+          ...p.itens.map((i) => i.produto?.nome ?? ''),
+        ];
+        return campos.some((campo) => normalizar(campo).includes(busca));
+      }),
+    [todos, filtro, busca],
   );
 
-  const filtrando = filtroPagamento !== null || filtroProducao !== null;
+  const filtrando = chaveFiltro !== null || busca.length > 0;
 
   async function handleGerarEtiqueta() {
     if (!aberto) return;
@@ -181,34 +220,35 @@ export default function AdminPedidosScreen() {
     <Screen scroll={false} maxWidth={900} style={styles.screen}>
       {todos.length ? (
         <View style={[styles.filtros, { borderColor: theme.border }]}>
-          <LinhaDeFiltro
-            titulo="Pagamento"
-            opcoes={PAGAMENTOS}
-            rotulo={ROTULO_PAGAMENTO_CURTO}
-            selecionado={filtroPagamento}
-            onSelecionar={setFiltroPagamento}
-          />
-          <LinhaDeFiltro
-            titulo="Produção e envio"
-            opcoes={PRODUCOES}
-            rotulo={ROTULO_PRODUCAO}
-            selecionado={filtroProducao}
-            onSelecionar={setFiltroProducao}
-          />
+          <Busca valor={termo} onChange={setTermo} />
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+            <Chip texto="Todos" ativo={chaveFiltro === null} onPress={() => setChaveFiltro(null)} />
+            {FILTROS.map((opcao) => (
+              <Chip
+                key={opcao.chave}
+                texto={opcao.rotulo}
+                ativo={chaveFiltro === opcao.chave}
+                // Tocar de novo no que já está ativo desliga o filtro — é o que
+                // a mão espera, e evita ter que voltar no "Todos".
+                onPress={() => setChaveFiltro(chaveFiltro === opcao.chave ? null : opcao.chave)}
+              />
+            ))}
+          </ScrollView>
+
           {filtrando ? (
             <View style={styles.resultado}>
               <ThemedText type="small" themeColor="textSecondary">
-                {pedidos.length} de {todos.length}{' '}
-                {todos.length === 1 ? 'pedido' : 'pedidos'}
+                {pedidos.length} de {todos.length} {todos.length === 1 ? 'pedido' : 'pedidos'}
               </ThemedText>
               <Pressable
                 onPress={() => {
-                  setFiltroPagamento(null);
-                  setFiltroProducao(null);
+                  setChaveFiltro(null);
+                  setTermo('');
                 }}
                 hitSlop={8}>
                 <ThemedText type="small" themeColor="primary">
-                  Limpar filtro
+                  Limpar
                 </ThemedText>
               </Pressable>
             </View>
@@ -280,11 +320,11 @@ export default function AdminPedidosScreen() {
             color={theme.textSecondary}
           />
           <ThemedText type="smallBold">
-            {todos.length ? 'Nenhum pedido com esse filtro' : 'Nenhum pedido ainda'}
+            {todos.length ? 'Nenhum pedido encontrado' : 'Nenhum pedido ainda'}
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary" style={styles.centralizado}>
             {todos.length
-              ? 'Tente outro status, ou limpe o filtro pra ver todos.'
+              ? 'Tente outra busca ou outro status — ou toque em Limpar pra ver todos.'
               : 'Os pedidos dos clientes aparecem aqui assim que forem feitos.'}
           </ThemedText>
         </View>
@@ -556,8 +596,18 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.one,
     borderBottomWidth: 1,
   },
-  filtroLinha: {
-    gap: Spacing.one,
+  busca: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: Radius.small,
+    borderWidth: 1,
+  },
+  buscaInput: {
+    flex: 1,
+    fontSize: 16,
   },
   chips: {
     flexDirection: 'row',
