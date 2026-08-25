@@ -182,10 +182,14 @@ export function IntroVideo({ onFim }: { onFim: () => void }) {
         </View>
       )}
 
+      {/* "contain" e nao "cover": o video e vertical (720x1280) e cada tela tem
+          uma proporcao. Com "cover" ele enchia a tela cortando as bordas — a
+          pessoa aparecia sem metade do rosto. As sobras caem na laranja da
+          marca, que ja e o fundo. */}
       <VideoView
         player={player}
         style={styles.video}
-        contentFit="cover"
+        contentFit="contain"
         nativeControls={false}
         allowsPictureInPicture={false}
       />
