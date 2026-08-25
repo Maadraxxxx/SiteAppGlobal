@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
-import { Screen } from '@/components/Screen';
+import { Screen, useMostrarBarraDeRolagem } from '@/components/Screen';
 import { StatusPedidoTag } from '@/components/StatusPedidoTag';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
@@ -25,6 +25,7 @@ export default function PedidosScreen() {
   const { usuario } = useAuth();
   const { data: dados, isLoading } = useMeusPedidos();
   const theme = useTheme();
+  const mostrarBarra = useMostrarBarraDeRolagem();
 
   if (!usuario) {
     return (
@@ -66,6 +67,7 @@ export default function PedidosScreen() {
   return (
     <Screen scroll={false} maxWidth={800} style={styles.screen}>
       <FlatList
+          showsVerticalScrollIndicator={mostrarBarra}
         data={pedidos}
         keyExtractor={(item) => item.id}
         style={styles.lista}

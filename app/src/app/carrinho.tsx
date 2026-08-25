@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
-import { Screen } from '@/components/Screen';
+import { Screen, useMostrarBarraDeRolagem } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
@@ -68,6 +68,7 @@ export default function CarrinhoScreen() {
   const { items, totalPreco, clear } = useCart();
   const { usuario } = useAuth();
   const theme = useTheme();
+  const mostrarBarra = useMostrarBarraDeRolagem();
 
 
   function handleFinalizar() {
@@ -90,6 +91,7 @@ export default function CarrinhoScreen() {
   return (
     <Screen scroll={false} style={styles.screen}>
       <FlatList
+          showsVerticalScrollIndicator={mostrarBarra}
         data={items}
         keyExtractor={(item) => chaveDoItem(item)}
         style={styles.list}

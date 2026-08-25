@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
-import { Screen } from '@/components/Screen';
+import { Screen, useMostrarBarraDeRolagem } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useAdminProdutos, useDesativarProduto, useReativarProduto } from '@/hooks/useProdutos';
@@ -14,6 +14,7 @@ export default function AdminProdutosScreen() {
   const desativarMutation = useDesativarProduto();
   const reativarMutation = useReativarProduto();
   const theme = useTheme();
+  const mostrarBarra = useMostrarBarraDeRolagem();
 
   return (
     <Screen scroll={false}>
@@ -24,6 +25,7 @@ export default function AdminProdutosScreen() {
         <ActivityIndicator style={styles.loading} />
       ) : (
         <FlatList
+          showsVerticalScrollIndicator={mostrarBarra}
           data={data?.items ?? []}
           keyExtractor={(item) => item.id}
           style={styles.listFlex}

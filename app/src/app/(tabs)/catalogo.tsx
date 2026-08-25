@@ -16,7 +16,7 @@ import { Button } from '@/components/Button';
 import { CartButton } from '@/components/CartButton';
 import { Chip } from '@/components/Chip';
 import { ProductCard } from '@/components/ProductCard';
-import { Screen } from '@/components/Screen';
+import { Screen, useMostrarBarraDeRolagem } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { estilosHooks, formatosHooks, useCategorias } from '@/hooks/useCatalogo';
@@ -98,6 +98,7 @@ export default function CatalogoScreen() {
   const [search, setSearch] = useState('');
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
   const theme = useTheme();
+  const mostrarBarra = useMostrarBarraDeRolagem();
   const { numColumns, itemWidth } = useGrade();
 
   useEffect(() => {
@@ -225,6 +226,7 @@ export default function CatalogoScreen() {
             {itens.length} {itens.length === 1 ? 'produto' : 'produtos'}
           </ThemedText>
           <FlatList
+          showsVerticalScrollIndicator={mostrarBarra}
             key={numColumns}
             data={itens}
             keyExtractor={(item) => item.id}

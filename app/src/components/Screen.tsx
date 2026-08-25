@@ -1,7 +1,17 @@
-import { ScrollView, StyleSheet, View, type ViewProps } from 'react-native';
+import { ScrollView, StyleSheet, useWindowDimensions, View, type ViewProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+
+/** Abaixo disso é celular: a barra de rolagem do navegador rouba espaço e
+ * destoa do app, então some. No desktop ela continua, onde é esperada. */
+const LARGURA_CELULAR = 768;
+
+/** Para listas que rolam sozinhas (FlatList) seguirem a mesma regra do Screen. */
+export function useMostrarBarraDeRolagem() {
+  const { width } = useWindowDimensions();
+  return width >= LARGURA_CELULAR;
+}
 
 interface ScreenProps extends ViewProps {
   /** false when a child (e.g. FlatList) manages its own scrolling. */
@@ -12,6 +22,8 @@ interface ScreenProps extends ViewProps {
 
 export function Screen({ children, style, scroll = true, maxWidth = MaxContentWidth, ...rest }: ScreenProps) {
   const theme = useTheme();
+  const { width } = useWindowDimensions();
+  const noCelular = width < LARGURA_CELULAR;
 
   if (!scroll) {
     return (
@@ -25,7 +37,7 @@ export function Screen({ children, style, scroll = true, maxWidth = MaxContentWi
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={!noCelular}>
         <View style={[styles.inner, { maxWidth }, style]} {...rest}>
           {children}
         </View>

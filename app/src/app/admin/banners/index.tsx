@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { FormSection } from '@/components/FormSection';
 import { ImageUploadField } from '@/components/ImageUploadField';
-import { Screen } from '@/components/Screen';
+import { Screen, useMostrarBarraDeRolagem } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useAdminBanners, useCreateBanner, useRemoveBanner } from '@/hooks/useBanners';
@@ -15,6 +15,7 @@ export default function AdminBannersScreen() {
   const createMutation = useCreateBanner();
   const removeMutation = useRemoveBanner();
   const theme = useTheme();
+  const mostrarBarra = useMostrarBarraDeRolagem();
   const [error, setError] = useState<string>();
   const [removendoId, setRemovendoId] = useState<string>();
 
@@ -63,6 +64,7 @@ export default function AdminBannersScreen() {
         <ActivityIndicator />
       ) : (
         <FlatList
+          showsVerticalScrollIndicator={mostrarBarra}
           data={data?.items ?? []}
           keyExtractor={(item) => item.id}
           style={styles.listFlex}

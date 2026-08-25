@@ -29,9 +29,10 @@ export async function resumoDoMes() {
   const desde = inicioDoMes();
 
   const [quantidade, soma] = await Promise.all([
-    // Cancelado nao conta como pedido do mes pra quem olha o resumo.
+    // So os pagos, o mesmo criterio do valor arrecadado. Contar os que ainda
+    // aguardam pagamento inflava o numero e nao batia com o dinheiro ao lado.
     prisma.pedido.count({
-      where: { createdAt: { gte: desde }, status: { not: StatusPedido.CANCELADO } },
+      where: { createdAt: { gte: desde }, status: { in: STATUS_PAGOS } },
     }),
     prisma.pedido.aggregate({
       _sum: { total: true },

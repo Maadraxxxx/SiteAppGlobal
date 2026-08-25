@@ -148,15 +148,17 @@ export default function AdminDashboard() {
         </View>
       </View>
 
+      {/* "Novo produto" sozinho em cima: dividido em três, o rótulo quebrava em
+          duas linhas e o botão ficava mais alto que os vizinhos. */}
       <View style={styles.acoes}>
-        <View style={styles.acaoBotao}>
-          <Button title="Novo produto" onPress={() => router.push('/admin/produtos/novo')} />
-        </View>
-        <View style={styles.acaoBotao}>
-          <Button title="Pedidos" variant="ghost" onPress={() => router.push(ROTAS.adminPedidos)} />
-        </View>
-        <View style={styles.acaoBotao}>
-          <Button title="Carrossel" variant="ghost" onPress={() => router.push(ROTAS.adminCarrossel)} />
+        <Button title="Novo produto" onPress={() => router.push('/admin/produtos/novo')} />
+        <View style={styles.acoesSecundarias}>
+          <View style={styles.acaoBotao}>
+            <Button title="Pedidos" variant="ghost" onPress={() => router.push(ROTAS.adminPedidos)} />
+          </View>
+          <View style={styles.acaoBotao}>
+            <Button title="Carrossel" variant="ghost" onPress={() => router.push(ROTAS.adminCarrossel)} />
+          </View>
         </View>
       </View>
 
@@ -266,6 +268,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   acoes: {
+    gap: Spacing.two,
+  },
+  acoesSecundarias: {
     flexDirection: 'row',
     gap: Spacing.two,
   },

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { ActivityIndicator, FlatList, Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { envioApi, urlDeDownload } from '@/api/envio';
 import { Button } from '@/components/Button';
-import { Screen } from '@/components/Screen';
+import { Screen, useMostrarBarraDeRolagem } from '@/components/Screen';
 import { ROTULO_STATUS, StatusPedidoTag } from '@/components/StatusPedidoTag';
 import { TextField } from '@/components/TextField';
 import { ThemedText } from '@/components/themed-text';
@@ -40,6 +40,7 @@ export default function AdminPedidosScreen() {
   const [gerandoEtiqueta, setGerandoEtiqueta] = useState(false);
   const [salvandoRastreio, setSalvandoRastreio] = useState(false);
   const theme = useTheme();
+  const mostrarBarra = useMostrarBarraDeRolagem();
 
   async function handleGerarEtiqueta() {
     if (!aberto) return;
@@ -97,6 +98,7 @@ export default function AdminPedidosScreen() {
     <Screen scroll={false} maxWidth={900} style={styles.screen}>
       {pedidos.length ? (
         <FlatList
+          showsVerticalScrollIndicator={mostrarBarra}
           data={pedidos}
           keyExtractor={(item) => item.id}
           style={styles.lista}
