@@ -1,5 +1,17 @@
-import type { Pagamento, Pedido, ResumoPedidosMes, StatusPedido } from '@global-decora/shared';
+import type {
+  Pagamento,
+  Pedido,
+  ResumoPedidosMes,
+  StatusPagamentoPedido,
+  StatusProducao,
+} from '@global-decora/shared';
 import { apiRequest } from './client';
+
+/** Os dois eixos são independentes: manda só o que mudou. */
+export interface MudancaStatus {
+  statusPagamento?: StatusPagamentoPedido;
+  statusProducao?: StatusProducao;
+}
 
 export interface ItemEntrada {
   produtoId: string;
@@ -30,6 +42,6 @@ export const pedidosApi = {
 
   adminList: () => apiRequest<{ items: Pedido[] }>('/admin/pedidos'),
 
-  atualizarStatus: (id: string, status: StatusPedido) =>
-    apiRequest<{ pedido: Pedido }>(`/admin/pedidos/${id}/status`, { method: 'PUT', body: { status } }),
+  atualizarStatus: (id: string, mudanca: MudancaStatus) =>
+    apiRequest<{ pedido: Pedido }>(`/admin/pedidos/${id}/status`, { method: 'PUT', body: mudanca }),
 };

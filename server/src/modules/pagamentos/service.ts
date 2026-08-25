@@ -1,15 +1,18 @@
-import { StatusPagamento, StatusPedido } from '@prisma/client';
+import { StatusPagamento, StatusPagamentoPedido } from '@prisma/client';
 import { prisma } from '../../db/prisma';
 import { badRequest, notFound } from '../../lib/http-error';
 import { consultarPagamento, criarPagamentoPix } from '../../lib/mercadopago';
 import { getPedido } from '../pedidos/service';
 
-/** Quando o pagamento e aprovado o pedido sai de "aguardando" e vira PAGO. */
+/**
+ * Quando o pagamento e aprovado o pedido sai de "aguardando" e vira PAGO. Mexe
+ * so no eixo do dinheiro: a etapa da bancada e decisao do admin, nao do MP.
+ */
 async function refletirNoPedido(pedidoId: string, status: StatusPagamento) {
   if (status === StatusPagamento.APROVADO) {
     await prisma.pedido.updateMany({
-      where: { id: pedidoId, status: StatusPedido.AGUARDANDO_PAGAMENTO },
-      data: { status: StatusPedido.PAGO },
+      where: { id: pedidoId, statusPagamento: StatusPagamentoPedido.AGUARDANDO },
+      data: { statusPagamento: StatusPagamentoPedido.PAGO },
     });
   }
 }
@@ -17,7 +20,7 @@ async function refletirNoPedido(pedidoId: string, status: StatusPagamento) {
 export async function criarPix(pedidoId: string, usuarioId: string) {
   const pedido = await getPedido(pedidoId, { usuarioId });
 
-  if (pedido.status !== StatusPedido.AGUARDANDO_PAGAMENTO) {
+  if (pedido.statusPagamento !== StatusPagamentoPedido.AGUARDANDO) {
     throw badRequest('Esse pedido nao esta mais aguardando pagamento');
   }
 

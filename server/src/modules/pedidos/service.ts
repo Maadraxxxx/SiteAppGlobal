@@ -1,17 +1,12 @@
-import { Prisma, StatusPedido } from '@prisma/client';
+import { Prisma, StatusPagamentoPedido, StatusProducao } from '@prisma/client';
 import { prisma } from '../../db/prisma';
 import { badRequest, notFound } from '../../lib/http-error';
 import { get as getEndereco } from '../enderecos/service';
 import { precoDoServico } from '../frete/service';
 
-// "Arrecadado" e dinheiro que de fato entrou, entao pedido ainda aguardando
-// pagamento nao entra na soma — so os status que ja passaram pelo pagamento.
-const STATUS_PAGOS: StatusPedido[] = [
-  StatusPedido.PAGO,
-  StatusPedido.EM_PRODUCAO,
-  StatusPedido.ENVIADO,
-  StatusPedido.CONCLUIDO,
-];
+// "Arrecadado" e dinheiro que de fato entrou. Agora e uma condicao so: o eixo
+// do pagamento nao se mistura mais com a etapa da bancada.
+const PAGO = { statusPagamento: StatusPagamentoPedido.PAGO };
 
 const INCLUDE_PEDIDO = {
   itens: { include: { produto: true, geracaoImagem: true } },
@@ -32,11 +27,11 @@ export async function resumoDoMes() {
     // So os pagos, o mesmo criterio do valor arrecadado. Contar os que ainda
     // aguardam pagamento inflava o numero e nao batia com o dinheiro ao lado.
     prisma.pedido.count({
-      where: { createdAt: { gte: desde }, status: { in: STATUS_PAGOS } },
+      where: { createdAt: { gte: desde }, ...PAGO },
     }),
     prisma.pedido.aggregate({
       _sum: { total: true },
-      where: { createdAt: { gte: desde }, status: { in: STATUS_PAGOS } },
+      where: { createdAt: { gte: desde }, ...PAGO },
     }),
   ]);
 
@@ -174,7 +169,20 @@ export async function getPedido(id: string, opcoes?: { usuarioId?: string }) {
   return pedido;
 }
 
-export async function atualizarStatus(id: string, status: StatusPedido) {
+/**
+ * Os dois eixos sao independentes e o admin mexe num de cada vez, entao os
+ * campos vem separados e so o que veio e gravado.
+ */
+export async function atualizarStatus(
+  id: string,
+  mudanca: { statusPagamento?: StatusPagamentoPedido; statusProducao?: StatusProducao },
+) {
   await getPedido(id);
-  return prisma.pedido.update({ where: { id }, data: { status }, include: INCLUDE_PEDIDO });
+
+  const data: Prisma.PedidoUpdateInput = {};
+  if (mudanca.statusPagamento) data.statusPagamento = mudanca.statusPagamento;
+  if (mudanca.statusProducao) data.statusProducao = mudanca.statusProducao;
+  if (!Object.keys(data).length) throw badRequest('Informe o status de pagamento ou o de producao');
+
+  return prisma.pedido.update({ where: { id }, data, include: INCLUDE_PEDIDO });
 }

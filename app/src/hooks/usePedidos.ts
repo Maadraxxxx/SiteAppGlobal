@@ -1,6 +1,10 @@
-import type { StatusPedido } from '@global-decora/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { pedidosApi, type FreteEscolhido, type ItemEntrada } from '@/api/pedidos';
+import {
+  pedidosApi,
+  type FreteEscolhido,
+  type ItemEntrada,
+  type MudancaStatus,
+} from '@/api/pedidos';
 
 export function useResumoPedidosMes() {
   return useQuery({ queryKey: ['resumo-pedidos-mes'], queryFn: () => pedidosApi.resumoMes() });
@@ -43,8 +47,8 @@ export function useCriarPedido() {
 export function useAtualizarStatusPedido() {
   const invalidate = useInvalidatePedidos();
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: StatusPedido }) =>
-      pedidosApi.atualizarStatus(id, status),
+    mutationFn: ({ id, ...mudanca }: { id: string } & MudancaStatus) =>
+      pedidosApi.atualizarStatus(id, mudanca),
     onSuccess: invalidate,
   });
 }

@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Screen, useMostrarBarraDeRolagem } from '@/components/Screen';
-import { StatusPedidoTag } from '@/components/StatusPedidoTag';
+import { TagPagamento, TagProducao } from '@/components/StatusPedidoTag';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
@@ -73,8 +73,8 @@ export default function PedidosScreen() {
         style={styles.lista}
         contentContainerStyle={styles.listaConteudo}
         renderItem={({ item }) => {
-          const aguardando = item.status === 'AGUARDANDO_PAGAMENTO';
-          const podeRastrear = !aguardando && item.status !== 'CANCELADO';
+          const aguardando = item.statusPagamento === 'AGUARDANDO';
+          const podeRastrear = item.statusPagamento === 'PAGO';
           const capa = item.itens.find((i) => i.produto?.imagemUrl)?.produto?.imagemUrl;
 
           return (
@@ -103,7 +103,14 @@ export default function PedidosScreen() {
                   <ThemedText type="small" themeColor="textSecondary">
                     {data(item.createdAt)}
                   </ThemedText>
-                  <StatusPedidoTag status={item.status} />
+                  {/* Os dois status juntos: o cliente quer saber se pagou e
+                      onde o pedido está na produção. */}
+                  <View style={styles.tags}>
+                    <TagPagamento status={item.statusPagamento} />
+                    {item.statusPagamento === 'PAGO' ? (
+                      <TagProducao status={item.statusProducao} />
+                    ) : null}
+                  </View>
                 </View>
               </View>
 
@@ -173,6 +180,13 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: Spacing.half,
     alignItems: 'flex-start',
+  },
+  tags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: Spacing.one,
+    marginTop: Spacing.half,
   },
   chamada: {
     flexDirection: 'row',

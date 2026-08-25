@@ -7,13 +7,23 @@ import { Fragment, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { envioApi } from '@/api/envio';
 import { Screen } from '@/components/Screen';
-import { ROTULO_STATUS, StatusPedidoTag } from '@/components/StatusPedidoTag';
+import { ROTULO_PRODUCAO, TagPagamento, TagProducao } from '@/components/StatusPedidoTag';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-/** As etapas por onde o pedido passa, na ordem — vira a linha do tempo. */
-const ETAPAS = ['PAGO', 'EM_PRODUCAO', 'ENVIADO', 'CONCLUIDO'] as const;
+/**
+ * As etapas por onde o pedido passa, na ordem — vira a linha do tempo. A
+ * primeira vem do eixo do pagamento, as outras do eixo da produção.
+ */
+const ETAPAS = [
+  { chave: 'PAGO', rotulo: 'Pago' },
+  { chave: 'EM_PRODUCAO', rotulo: ROTULO_PRODUCAO.EM_PRODUCAO },
+  { chave: 'ENVIADO', rotulo: ROTULO_PRODUCAO.ENVIADO },
+  { chave: 'ENTREGUE', rotulo: ROTULO_PRODUCAO.ENTREGUE },
+] as const;
+
+const ETAPAS_PRODUCAO = ['EM_PRODUCAO', 'ENVIADO', 'ENTREGUE'] as const;
 
 function dataHora(iso?: string) {
   if (!iso) return '';
@@ -58,13 +68,22 @@ export default function RastreioScreen() {
 
   const { rastreio } = data;
   const eventos = rastreio.eventos as EventoRastreio[];
-  const cancelado = rastreio.status === 'CANCELADO';
-  const etapaAtual = ETAPAS.indexOf(rastreio.status as (typeof ETAPAS)[number]);
+  const cancelado = rastreio.statusPagamento === 'CANCELADO';
+  const pago = rastreio.statusPagamento === 'PAGO';
+  // Etapa 0 é o pagamento; da 1 em diante vem do eixo da produção. Sem
+  // pagamento nada acendeu ainda.
+  const indiceProducao = ETAPAS_PRODUCAO.indexOf(
+    rastreio.statusProducao as (typeof ETAPAS_PRODUCAO)[number],
+  );
+  const etapaAtual = pago ? indiceProducao + 1 : -1;
 
   return (
     <Screen maxWidth={640} style={styles.screen}>
       <View style={[styles.resumo, { backgroundColor: theme.backgroundElement }]}>
-        <StatusPedidoTag status={rastreio.status} />
+        <View style={styles.tags}>
+          <TagPagamento status={rastreio.statusPagamento} />
+          {pago ? <TagProducao status={rastreio.statusProducao} /> : null}
+        </View>
         {rastreio.transportadora ? (
           <ThemedText type="small" themeColor="textSecondary">
             {rastreio.transportadora} {rastreio.servico}
@@ -105,7 +124,7 @@ export default function RastreioScreen() {
             {ETAPAS.map((etapa, i) => {
               const passou = etapaAtual >= i;
               return (
-                <Fragment key={etapa}>
+                <Fragment key={etapa.chave}>
                   {i > 0 ? (
                     <View
                       style={[
@@ -126,7 +145,7 @@ export default function RastreioScreen() {
                       {passou ? <Ionicons name="checkmark" size={12} color={theme.primaryText} /> : null}
                     </View>
                     <ThemedText type="small" themeColor={passou ? 'text' : 'textSecondary'}>
-                      {ROTULO_STATUS[etapa]}
+                      {etapa.rotulo}
                     </ThemedText>
                   </View>
                 </Fragment>
@@ -180,6 +199,12 @@ const styles = StyleSheet.create({
   },
   centralizado: {
     textAlign: 'center',
+  },
+  tags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: Spacing.one,
   },
   resumo: {
     padding: Spacing.three,

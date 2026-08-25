@@ -1,38 +1,61 @@
-import type { StatusPedido } from '@global-decora/shared';
+import type { StatusPagamentoPedido, StatusProducao } from '@global-decora/shared';
 import { StyleSheet, View } from 'react-native';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { ThemedText } from './themed-text';
 
-export const ROTULO_STATUS: Record<StatusPedido, string> = {
-  AGUARDANDO_PAGAMENTO: 'Aguardando pagamento',
+export const ROTULO_PAGAMENTO: Record<StatusPagamentoPedido, string> = {
+  AGUARDANDO: 'Aguardando pagamento',
   PAGO: 'Pago',
-  EM_PRODUCAO: 'Em produção',
-  ENVIADO: 'Enviado',
-  CONCLUIDO: 'Concluído',
   CANCELADO: 'Cancelado',
 };
 
-export function StatusPedidoTag({ status }: { status: StatusPedido }) {
-  const theme = useTheme();
+// No filtro o título da linha já diz "Pagamento", então o chip não precisa
+// repetir a palavra — sem isso a linha fica larga demais no celular.
+export const ROTULO_PAGAMENTO_CURTO: Record<StatusPagamentoPedido, string> = {
+  AGUARDANDO: 'Aguardando',
+  PAGO: 'Pago',
+  CANCELADO: 'Cancelado',
+};
 
-  const cor =
-    status === 'CANCELADO'
-      ? theme.danger
-      : status === 'CONCLUIDO' || status === 'PAGO'
-        ? theme.success
-        : status === 'AGUARDANDO_PAGAMENTO'
-          ? theme.textSecondary
-          : theme.primary;
+// "Na fila" e nao "Aguardando": ao lado de "Aguardando pagamento" as duas
+// etiquetas ficariam iguais e ninguem saberia qual e qual.
+export const ROTULO_PRODUCAO: Record<StatusProducao, string> = {
+  AGUARDANDO: 'Na fila',
+  EM_PRODUCAO: 'Em produção',
+  ENVIADO: 'Enviado',
+  ENTREGUE: 'Entregue',
+};
 
+function Tag({ texto, cor }: { texto: string; cor: string }) {
   return (
     <View style={[styles.tag, { borderColor: cor }]}>
       <View style={[styles.ponto, { backgroundColor: cor }]} />
       <ThemedText type="small" style={{ color: cor }}>
-        {ROTULO_STATUS[status]}
+        {texto}
       </ThemedText>
     </View>
   );
+}
+
+export function TagPagamento({ status }: { status: StatusPagamentoPedido }) {
+  const theme = useTheme();
+  const cor =
+    status === 'PAGO' ? theme.success : status === 'CANCELADO' ? theme.danger : theme.textSecondary;
+
+  return <Tag texto={ROTULO_PAGAMENTO[status]} cor={cor} />;
+}
+
+export function TagProducao({ status }: { status: StatusProducao }) {
+  const theme = useTheme();
+  const cor =
+    status === 'ENTREGUE'
+      ? theme.success
+      : status === 'AGUARDANDO'
+        ? theme.textSecondary
+        : theme.primary;
+
+  return <Tag texto={ROTULO_PRODUCAO[status]} cor={cor} />;
 }
 
 const styles = StyleSheet.create({

@@ -1,21 +1,26 @@
-import type { Pedido, StatusPedido } from '@global-decora/shared';
+import type { Pedido, StatusPagamentoPedido, StatusProducao } from '@global-decora/shared';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { envioApi, urlDeDownload } from '@/api/envio';
 import { Button } from '@/components/Button';
 import { Screen, useMostrarBarraDeRolagem } from '@/components/Screen';
-import { ROTULO_STATUS, StatusPedidoTag } from '@/components/StatusPedidoTag';
+import {
+  ROTULO_PAGAMENTO,
+  ROTULO_PAGAMENTO_CURTO,
+  ROTULO_PRODUCAO,
+  TagPagamento,
+  TagProducao,
+} from '@/components/StatusPedidoTag';
 import { TextField } from '@/components/TextField';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useAdminPedidos, useAtualizarStatusPedido } from '@/hooks/usePedidos';
 import { useTheme } from '@/hooks/use-theme';
 
-// Sem AGUARDANDO_PAGAMENTO: quem muda pra pago e o retorno do Mercado Pago,
-// nao o admin na mao.
-const STATUS_EDITAVEIS: StatusPedido[] = ['PAGO', 'EM_PRODUCAO', 'ENVIADO', 'CONCLUIDO', 'CANCELADO'];
+const PAGAMENTOS: StatusPagamentoPedido[] = ['AGUARDANDO', 'PAGO', 'CANCELADO'];
+const PRODUCOES: StatusProducao[] = ['AGUARDANDO', 'EM_PRODUCAO', 'ENVIADO', 'ENTREGUE'];
 
 function moeda(valor: string | number) {
   const [inteiro, centavos] = (Number(valor) || 0).toFixed(2).split('.');
@@ -31,6 +36,62 @@ function dataHora(iso: string) {
   });
 }
 
+/** Uma linha de chips: "Todos" mais um por status. Rola de lado no celular. */
+function LinhaDeFiltro<T extends string>({
+  titulo,
+  opcoes,
+  rotulo,
+  selecionado,
+  onSelecionar,
+}: {
+  titulo: string;
+  opcoes: T[];
+  rotulo: Record<T, string>;
+  selecionado: T | null;
+  onSelecionar: (valor: T | null) => void;
+}) {
+  const theme = useTheme();
+
+  function Chip({ texto, ativo, onPress }: { texto: string; ativo: boolean; onPress: () => void }) {
+    return (
+      <Pressable
+        onPress={onPress}
+        style={[
+          styles.chip,
+          {
+            backgroundColor: ativo ? theme.primary : theme.backgroundElement,
+            borderColor: ativo ? theme.primary : theme.border,
+          },
+        ]}>
+        <ThemedText type="small" themeColor={ativo ? 'primaryText' : 'text'}>
+          {texto}
+        </ThemedText>
+      </Pressable>
+    );
+  }
+
+  return (
+    <View style={styles.filtroLinha}>
+      <ThemedText type="small" themeColor="textSecondary">
+        {titulo}
+      </ThemedText>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        <Chip texto="Todos" ativo={selecionado === null} onPress={() => onSelecionar(null)} />
+        {opcoes.map((opcao) => (
+          <Chip
+            key={opcao}
+            texto={rotulo[opcao]}
+            ativo={selecionado === opcao}
+            // Tocar de novo no que já está ativo desliga o filtro — é o que a
+            // mão espera, e evita ter que voltar no "Todos".
+            onPress={() => onSelecionar(selecionado === opcao ? null : opcao)}
+          />
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
 export default function AdminPedidosScreen() {
   const { data, isLoading, refetch: recarregar } = useAdminPedidos();
   const atualizar = useAtualizarStatusPedido();
@@ -39,8 +100,26 @@ export default function AdminPedidosScreen() {
   const [codigoRastreio, setCodigoRastreio] = useState('');
   const [gerandoEtiqueta, setGerandoEtiqueta] = useState(false);
   const [salvandoRastreio, setSalvandoRastreio] = useState(false);
+  const [filtroPagamento, setFiltroPagamento] = useState<StatusPagamentoPedido | null>(null);
+  const [filtroProducao, setFiltroProducao] = useState<StatusProducao | null>(null);
   const theme = useTheme();
   const mostrarBarra = useMostrarBarraDeRolagem();
+
+  const todos = data?.items ?? [];
+
+  // Os dois filtros se somam: dá pra pedir "pago e ainda na fila", que é
+  // justamente a fila de produção do dia.
+  const pedidos = useMemo(
+    () =>
+      todos.filter(
+        (p) =>
+          (!filtroPagamento || p.statusPagamento === filtroPagamento) &&
+          (!filtroProducao || p.statusProducao === filtroProducao),
+      ),
+    [todos, filtroPagamento, filtroProducao],
+  );
+
+  const filtrando = filtroPagamento !== null || filtroProducao !== null;
 
   async function handleGerarEtiqueta() {
     if (!aberto) return;
@@ -73,12 +152,18 @@ export default function AdminPedidosScreen() {
     }
   }
 
-  async function handleStatus(status: StatusPedido) {
+  /** Muda um eixo só; o outro fica onde está. */
+  async function handleStatus(mudanca: {
+    statusPagamento?: StatusPagamentoPedido;
+    statusProducao?: StatusProducao;
+  }) {
     if (!aberto) return;
     setError(undefined);
     try {
-      await atualizar.mutateAsync({ id: aberto.id, status });
-      setAberto(null);
+      const { pedido } = await atualizar.mutateAsync({ id: aberto.id, ...mudanca });
+      // Fica aberto: quem muda o pagamento normalmente mexe na produção logo em
+      // seguida, e fechar a cada toque obrigaria a reabrir o pedido.
+      setAberto(pedido);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível mudar o status');
     }
@@ -92,11 +177,46 @@ export default function AdminPedidosScreen() {
     );
   }
 
-  const pedidos = data?.items ?? [];
-
   return (
     <Screen scroll={false} maxWidth={900} style={styles.screen}>
-      {pedidos.length ? (
+      {todos.length ? (
+        <View style={[styles.filtros, { borderColor: theme.border }]}>
+          <LinhaDeFiltro
+            titulo="Pagamento"
+            opcoes={PAGAMENTOS}
+            rotulo={ROTULO_PAGAMENTO_CURTO}
+            selecionado={filtroPagamento}
+            onSelecionar={setFiltroPagamento}
+          />
+          <LinhaDeFiltro
+            titulo="Produção e envio"
+            opcoes={PRODUCOES}
+            rotulo={ROTULO_PRODUCAO}
+            selecionado={filtroProducao}
+            onSelecionar={setFiltroProducao}
+          />
+          {filtrando ? (
+            <View style={styles.resultado}>
+              <ThemedText type="small" themeColor="textSecondary">
+                {pedidos.length} de {todos.length}{' '}
+                {todos.length === 1 ? 'pedido' : 'pedidos'}
+              </ThemedText>
+              <Pressable
+                onPress={() => {
+                  setFiltroPagamento(null);
+                  setFiltroProducao(null);
+                }}
+                hitSlop={8}>
+                <ThemedText type="small" themeColor="primary">
+                  Limpar filtro
+                </ThemedText>
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+
+      {todos.length && pedidos.length ? (
         <FlatList
           showsVerticalScrollIndicator={mostrarBarra}
           data={pedidos}
@@ -133,16 +253,19 @@ export default function AdminPedidosScreen() {
                   </View>
 
                   <View style={styles.cardTexto}>
-                    <View style={styles.cardLinha}>
-                      <ThemedText type="smallBold">{moeda(item.total)}</ThemedText>
-                      <StatusPedidoTag status={item.status} />
-                    </View>
+                    <ThemedText type="smallBold">{moeda(item.total)}</ThemedText>
                     <ThemedText type="small" numberOfLines={1}>
                       {item.itens[0]?.produto?.nome ?? 'Produto removido'}
                     </ThemedText>
                     <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
                       {item.usuario.nome} · {dataHora(item.createdAt)}
                     </ThemedText>
+                    {/* As duas etiquetas juntas, quebrando linha quando a tela
+                        for estreita — cada pedido tem os dois status. */}
+                    <View style={styles.tags}>
+                      <TagPagamento status={item.statusPagamento} />
+                      <TagProducao status={item.statusProducao} />
+                    </View>
                   </View>
                 </View>
               </Pressable>
@@ -151,10 +274,18 @@ export default function AdminPedidosScreen() {
         />
       ) : (
         <View style={styles.centered}>
-          <Ionicons name="receipt-outline" size={40} color={theme.textSecondary} />
-          <ThemedText type="smallBold">Nenhum pedido ainda</ThemedText>
+          <Ionicons
+            name={todos.length ? 'filter-outline' : 'receipt-outline'}
+            size={40}
+            color={theme.textSecondary}
+          />
+          <ThemedText type="smallBold">
+            {todos.length ? 'Nenhum pedido com esse filtro' : 'Nenhum pedido ainda'}
+          </ThemedText>
           <ThemedText type="small" themeColor="textSecondary" style={styles.centralizado}>
-            Os pedidos dos clientes aparecem aqui assim que forem feitos.
+            {todos.length
+              ? 'Tente outro status, ou limpe o filtro pra ver todos.'
+              : 'Os pedidos dos clientes aparecem aqui assim que forem feitos.'}
           </ThemedText>
         </View>
       )}
@@ -172,6 +303,11 @@ export default function AdminPedidosScreen() {
           <ScrollView contentContainerStyle={styles.sheetConteudo}>
             {aberto ? (
               <>
+                <View style={styles.tags}>
+                  <TagPagamento status={aberto.statusPagamento} />
+                  <TagProducao status={aberto.statusProducao} />
+                </View>
+
                 <View style={styles.bloco}>
                   <ThemedText type="small" themeColor="textSecondary">
                     Cliente
@@ -324,26 +460,60 @@ export default function AdminPedidosScreen() {
 
                 <View style={styles.bloco}>
                   <ThemedText type="small" themeColor="textSecondary">
-                    Mudar status
+                    Pagamento
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    O Mercado Pago marca como pago sozinho. Mexa aqui só pra
+                    receber por fora ou cancelar.
                   </ThemedText>
                   <View style={styles.statusGrade}>
-                    {STATUS_EDITAVEIS.map((status) => (
+                    {PAGAMENTOS.map((status) => (
                       <Pressable
                         key={status}
-                        onPress={() => handleStatus(status)}
+                        onPress={() => handleStatus({ statusPagamento: status })}
                         disabled={atualizar.isPending}
                         style={[
                           styles.statusOpcao,
                           {
                             backgroundColor:
-                              aberto.status === status ? theme.primary : theme.backgroundElement,
-                            borderColor: aberto.status === status ? theme.primary : theme.border,
+                              aberto.statusPagamento === status ? theme.primary : theme.backgroundElement,
+                            borderColor:
+                              aberto.statusPagamento === status ? theme.primary : theme.border,
                           },
                         ]}>
                         <ThemedText
                           type="small"
-                          themeColor={aberto.status === status ? 'primaryText' : 'text'}>
-                          {ROTULO_STATUS[status]}
+                          themeColor={aberto.statusPagamento === status ? 'primaryText' : 'text'}>
+                          {ROTULO_PAGAMENTO[status]}
+                        </ThemedText>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+
+                <View style={styles.bloco}>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Produção e envio
+                  </ThemedText>
+                  <View style={styles.statusGrade}>
+                    {PRODUCOES.map((status) => (
+                      <Pressable
+                        key={status}
+                        onPress={() => handleStatus({ statusProducao: status })}
+                        disabled={atualizar.isPending}
+                        style={[
+                          styles.statusOpcao,
+                          {
+                            backgroundColor:
+                              aberto.statusProducao === status ? theme.primary : theme.backgroundElement,
+                            borderColor:
+                              aberto.statusProducao === status ? theme.primary : theme.border,
+                          },
+                        ]}>
+                        <ThemedText
+                          type="small"
+                          themeColor={aberto.statusProducao === status ? 'primaryText' : 'text'}>
+                          {ROTULO_PRODUCAO[status]}
                         </ThemedText>
                       </Pressable>
                     ))}
@@ -380,6 +550,32 @@ const styles = StyleSheet.create({
   centralizado: {
     textAlign: 'center',
   },
+  filtros: {
+    gap: Spacing.two,
+    paddingBottom: Spacing.three,
+    marginBottom: Spacing.one,
+    borderBottomWidth: 1,
+  },
+  filtroLinha: {
+    gap: Spacing.one,
+  },
+  chips: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+    paddingRight: Spacing.two,
+  },
+  chip: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+  },
+  resultado: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
   lista: {
     flex: 1,
   },
@@ -399,11 +595,12 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: Spacing.half,
   },
-  cardLinha: {
+  tags: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.two,
+    gap: Spacing.one,
+    marginTop: Spacing.half,
   },
   thumb: {
     width: 56,
@@ -492,6 +689,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
+    marginTop: Spacing.one,
   },
   statusOpcao: {
     paddingHorizontal: Spacing.three,

@@ -1,4 +1,4 @@
-import { StatusPedido } from '@prisma/client';
+import { StatusPagamentoPedido, StatusProducao } from '@prisma/client';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { authenticate, requireAdmin } from '../../middleware/auth';
@@ -18,7 +18,12 @@ const criarSchema = z.object({
   frete: z.object({ enderecoId: z.string().uuid(), servicoId: z.number().int() }).optional(),
 });
 
-const statusSchema = z.object({ status: z.nativeEnum(StatusPedido) });
+// Os dois eixos sao opcionais e independentes: o admin muda um de cada vez.
+// O service recusa se nenhum vier.
+const statusSchema = z.object({
+  statusPagamento: z.nativeEnum(StatusPagamentoPedido).optional(),
+  statusProducao: z.nativeEnum(StatusProducao).optional(),
+});
 
 export default async function pedidosRoutes(app: FastifyInstance) {
   app.register(async (scope) => {
@@ -77,8 +82,8 @@ export default async function pedidosRoutes(app: FastifyInstance) {
 
       adminScope.put('/:id/status', async (request, reply) => {
         const { id } = request.params as { id: string };
-        const { status } = statusSchema.parse(request.body);
-        const pedido = await pedidosService.atualizarStatus(id, status);
+        const mudanca = statusSchema.parse(request.body);
+        const pedido = await pedidosService.atualizarStatus(id, mudanca);
         return reply.send({ pedido });
       });
     },

@@ -81,13 +81,14 @@ export interface ResumoPedidosMes {
   arrecadado: string;
 }
 
-export type StatusPedido =
-  | 'AGUARDANDO_PAGAMENTO'
-  | 'PAGO'
-  | 'EM_PRODUCAO'
-  | 'ENVIADO'
-  | 'CONCLUIDO'
-  | 'CANCELADO';
+/**
+ * O pedido tem dois status ao mesmo tempo, e eles andam sozinhos: o do dinheiro
+ * (quem mexe é o retorno do Mercado Pago) e o da bancada (quem mexe é o admin).
+ * Antes era um só, e estar "em produção" apagava a informação de estar pago.
+ */
+export type StatusPagamentoPedido = 'AGUARDANDO' | 'PAGO' | 'CANCELADO';
+
+export type StatusProducao = 'AGUARDANDO' | 'EM_PRODUCAO' | 'ENVIADO' | 'ENTREGUE';
 
 export type StatusPagamento = 'PENDENTE' | 'APROVADO' | 'REJEITADO' | 'CANCELADO';
 
@@ -139,7 +140,8 @@ export interface Pagamento {
 
 export interface Pedido {
   id: string;
-  status: StatusPedido;
+  statusPagamento: StatusPagamentoPedido;
+  statusProducao: StatusProducao;
   /** soma dos itens, sem frete */
   subtotal: string;
   /** subtotal + frete — é o que vai pra cobrança */
@@ -177,7 +179,8 @@ export interface Rastreio {
   transportadora: string | null;
   servico: string | null;
   prazoDias: number | null;
-  status: StatusPedido;
+  statusPagamento: StatusPagamentoPedido;
+  statusProducao: StatusProducao;
   statusTransportadora?: string;
   eventos: EventoRastreio[];
 }

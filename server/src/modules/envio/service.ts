@@ -1,16 +1,9 @@
-import { StatusPedido } from '@prisma/client';
+import { StatusPagamentoPedido, StatusProducao } from '@prisma/client';
 import { prisma } from '../../db/prisma';
 import { badRequest, notFound } from '../../lib/http-error';
 import { comprarEtiqueta, rastrear } from '../../lib/melhor-envio-etiqueta';
 
 const PADRAO = { comprimento: 20, largura: 20, altura: 10, peso: 0.5 };
-
-/** Só faz sentido despachar o que já foi pago. */
-const STATUS_DESPACHAVEIS: StatusPedido[] = [
-  StatusPedido.PAGO,
-  StatusPedido.EM_PRODUCAO,
-  StatusPedido.ENVIADO,
-];
 
 export async function gerarEtiqueta(pedidoId: string) {
   const pedido = await prisma.pedido.findUnique({
@@ -20,7 +13,9 @@ export async function gerarEtiqueta(pedidoId: string) {
   if (!pedido) throw notFound('Pedido nao encontrado');
 
   if (pedido.urlEtiqueta) throw badRequest('Esse pedido ja tem etiqueta');
-  if (!STATUS_DESPACHAVEIS.includes(pedido.status)) {
+  // So faz sentido despachar o que ja foi pago — e agora e uma pergunta direta,
+  // sem depender de qual etapa da bancada o pedido alcancou.
+  if (pedido.statusPagamento !== StatusPagamentoPedido.PAGO) {
     throw badRequest('So da pra gerar etiqueta de pedido pago');
   }
   if (!pedido.cepDestino || !pedido.enderecoLogradouro) {
@@ -76,8 +71,9 @@ export async function gerarEtiqueta(pedidoId: string) {
       melhorEnvioEnvioId: resultado.envioId,
       urlEtiqueta: resultado.urlEtiqueta,
       codigoRastreio: resultado.codigoRastreio,
-      // Com etiqueta emitida o pedido saiu da bancada.
-      status: pedido.status === StatusPedido.ENVIADO ? pedido.status : StatusPedido.ENVIADO,
+      // Com etiqueta emitida o pedido saiu da bancada. So o eixo da producao
+      // anda; o pagamento fica como esta.
+      statusProducao: StatusProducao.ENVIADO,
     },
   });
 }
@@ -108,7 +104,12 @@ export async function definirRastreioManual(pedidoId: string, codigo: string) {
     where: { id: pedidoId },
     data: {
       codigoRastreio: codigo.trim().toUpperCase(),
-      status: pedido.status === StatusPedido.PAGO ? StatusPedido.ENVIADO : pedido.status,
+      // Ter codigo de rastreio significa que saiu. So nao volta atras em quem
+      // ja foi marcado como entregue.
+      statusProducao:
+        pedido.statusProducao === StatusProducao.ENTREGUE
+          ? pedido.statusProducao
+          : StatusProducao.ENVIADO,
     },
   });
 }
@@ -123,7 +124,8 @@ export async function rastreioDoPedido(pedidoId: string, usuarioId?: string) {
     transportadora: pedido.freteTransportadora,
     servico: pedido.freteServico,
     prazoDias: pedido.fretePrazoDias,
-    status: pedido.status,
+    statusPagamento: pedido.statusPagamento,
+    statusProducao: pedido.statusProducao,
   };
 
   // Sem envio no Melhor Envio (rastreio colado a mao) devolve so o codigo:

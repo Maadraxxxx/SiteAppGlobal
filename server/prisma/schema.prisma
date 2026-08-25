@@ -25,13 +25,21 @@ enum StatusKit {
   CONFIRMADO
 }
 
-enum StatusPedido {
-  AGUARDANDO_PAGAMENTO
+/// Dinheiro. Anda sozinho: quem mexe aqui e o retorno do Mercado Pago, nao a
+/// bancada. CANCELADO cobre tanto o pedido abandonado quanto o estornado.
+enum StatusPagamentoPedido {
+  AGUARDANDO
   PAGO
+  CANCELADO
+}
+
+/// Bancada e entrega. Anda sozinho tambem: um pedido pode estar pago e ainda
+/// nem ter entrado na producao, ou ja ter sido enviado.
+enum StatusProducao {
+  AGUARDANDO
   EM_PRODUCAO
   ENVIADO
-  CONCLUIDO
-  CANCELADO
+  ENTREGUE
 }
 
 enum TipoItemPedido {
@@ -260,15 +268,20 @@ model KitCustomizado {
 }
 
 model Pedido {
-  id        String       @id @default(uuid())
+  id        String  @id @default(uuid())
   usuarioId String
-  usuario   Usuario      @relation(fields: [usuarioId], references: [id])
-  status    StatusPedido @default(AGUARDANDO_PAGAMENTO)
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  // Dois eixos independentes: um pedido pago pode estar em producao, enviado
+  // ou ainda parado na fila. Antes era um status so, e um excluia o outro.
+  statusPagamento StatusPagamentoPedido @default(AGUARDANDO)
+  statusProducao  StatusProducao        @default(AGUARDANDO)
+
   // total = subtotal dos itens + frete; guardamos os dois pra nota e conferencia
-  subtotal  Decimal      @default(0) @db.Decimal(10, 2)
-  total     Decimal      @db.Decimal(10, 2)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  subtotal  Decimal  @default(0) @db.Decimal(10, 2)
+  total     Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Frete escolhido no carrinho (Melhor Envio). Nulo em pedido feito antes
   // de existir calculo de frete, ou em retirada.
