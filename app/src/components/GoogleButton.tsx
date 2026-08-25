@@ -1,5 +1,4 @@
 import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { Radius, Spacing } from '@/constants/theme';
@@ -7,8 +6,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/hooks/use-theme';
 import { ThemedText } from './themed-text';
 
-// Fecha a aba de login assim que o Google devolve o resultado.
-WebBrowser.maybeCompleteAuthSession();
+// O maybeCompleteAuthSession() fica no _layout raiz, nao aqui: o Google
+// redireciona pra raiz do site, onde este componente nem esta montado.
 
 const CLIENT_IDS = {
   web: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB,

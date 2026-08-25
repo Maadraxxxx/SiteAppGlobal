@@ -10,12 +10,19 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
+import * as WebBrowser from 'expo-web-browser';
 import { useEffect } from 'react';
 import { Colors } from '@/constants/theme';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// Precisa rodar no arranque do app, nao dentro da tela de login: o Google
+// redireciona pra raiz do site, entao o popup abre na Home. Daqui ele devolve
+// o resultado pra aba que iniciou o login e se fecha, em vez de logar dentro
+// do proprio popup e deixar a aba original parada no "Entrar".
+WebBrowser.maybeCompleteAuthSession();
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1 } },
