@@ -8,6 +8,9 @@ function assertConfigured() {
   }
 }
 
+/** Formatos que a API de edicao de imagem aceita. */
+const TIPOS_ACEITOS = ['image/jpeg', 'image/png', 'image/webp'];
+
 function montarPrompt(tema: string) {
   return (
     `Adapte esta decoracao de festa para o tema pedido pelo cliente: "${tema}". ` +
@@ -27,9 +30,18 @@ export async function gerarImagemComTema(imagemUrl: string, tema: string): Promi
   }
   const imagemBuffer = Buffer.from(await imagemOriginal.arrayBuffer());
 
+  // O tipo precisa ir junto: Blob sem `type` vira application/octet-stream e a
+  // OpenAI recusa. Vem do proprio Content-Type do arquivo no Storage, com png
+  // como reserva caso o servidor nao informe.
+  const tipoBruto = imagemOriginal.headers.get('content-type') ?? 'image/png';
+  const tipo = TIPOS_ACEITOS.includes(tipoBruto) ? tipoBruto : 'image/png';
+  const extensao = tipo.split('/')[1];
+
   const formData = new FormData();
-  formData.append('model', 'gpt-image-1');
-  formData.append('image', new Blob([imagemBuffer]), 'produto.png');
+  // gpt-image-2 e o atual e nao tem data de desligamento; o gpt-image-1 sai
+  // de circulacao em 23/10/2026.
+  formData.append('model', 'gpt-image-2');
+  formData.append('image', new Blob([imagemBuffer], { type: tipo }), `produto.${extensao}`);
   formData.append('prompt', montarPrompt(tema));
 
   const res = await fetch('https://api.openai.com/v1/images/edits', {
