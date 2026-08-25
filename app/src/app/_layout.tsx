@@ -11,7 +11,8 @@ import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { IntroVideo } from '@/components/IntroVideo';
 import { Colors } from '@/constants/theme';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
@@ -29,6 +30,9 @@ const queryClient = new QueryClient({
 });
 
 export default function RootLayout() {
+  // Abertura da marca: toca uma vez ao abrir e some sozinha no fim.
+  const [mostrandoIntro, setMostrandoIntro] = useState(true);
+
   const [fontsLoaded] = useFonts({
     Poppins_400Regular,
     Poppins_500Medium,
@@ -84,6 +88,10 @@ export default function RootLayout() {
               <Stack.Screen name="admin" />
               <Stack.Screen name="+not-found" />
             </Stack>
+
+            {/* Por cima de tudo, some sozinho quando o vídeo acaba. Fica dentro
+                dos providers pra o app já estar montado por trás quando sair. */}
+            {mostrandoIntro ? <IntroVideo onFim={() => setMostrandoIntro(false)} /> : null}
           </ThemeProvider>
         </CartProvider>
       </AuthProvider>

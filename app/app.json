@@ -39,7 +39,8 @@
           "photosPermission": "O Global Decora usa suas fotos para você escolher a imagem do produto.",
           "cameraPermission": "O Global Decora usa a câmera para você fotografar o produto."
         }
-      ]
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,
