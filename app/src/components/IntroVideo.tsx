@@ -1,7 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useEventListener } from 'expo';
+import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useRef, useState } from 'react';
-import { Image } from 'expo-image';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { ThemedText } from './themed-text';
@@ -9,9 +10,15 @@ import { ThemedText } from './themed-text';
 const VIDEO = require('@/assets/video/intro.mp4');
 
 /** Rede ruim ou codec sem suporte: some sozinho em vez de prender o cliente na porta. */
-const LIMITE_MS = 15000;
+const LIMITE_CARREGANDO_MS = 15000;
+/** Depois que começa a tocar, o limite é a duração do vídeo com folga. */
+const LIMITE_TOCANDO_MS = 14000;
 /** Quanto esperar pra decidir se o vídeo realmente saiu do lugar. */
 const ESPERA_PLAY_MS = 2000;
+/** Quanto o convite pra tocar fica na tela antes de entrar na loja sozinho. */
+const ESPERA_TOQUE_MS = 4500;
+
+type Fase = 'carregando' | 'tocando' | 'oferecendo';
 
 function elementoDeVideo(no: View | null) {
   const html = no as unknown as HTMLElement | null;
@@ -31,11 +38,13 @@ function marcarParaTocarEmbutido(video: HTMLVideoElement) {
 }
 
 export function IntroVideo({ onFim }: { onFim: () => void }) {
+  const [fase, setFase] = useState<Fase>('carregando');
   const [saindo, setSaindo] = useState(false);
   const containerRef = useRef<View>(null);
   // Ref (e não state) porque o timeout e o evento de fim podem chegar juntos, e
   // o state só atualiza no próximo render — dava pra chamar onFim duas vezes.
   const jaSaiu = useRef(false);
+  const limite = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const player = useVideoPlayer(VIDEO, (player) => {
     player.loop = false;
@@ -43,23 +52,47 @@ export function IntroVideo({ onFim }: { onFim: () => void }) {
     player.muted = true;
   });
 
+  function armarLimite(ms: number) {
+    if (limite.current) clearTimeout(limite.current);
+    limite.current = setTimeout(encerrar, ms);
+  }
+
   function encerrar() {
     if (jaSaiu.current) return;
     jaSaiu.current = true;
+    if (limite.current) clearTimeout(limite.current);
     setSaindo(true);
     onFim();
   }
 
+  /** Só encerra se de fato não andou — o vídeo pode ter começado no meio tempo. */
+  function encerrarSeParado() {
+    if (player.currentTime > 0.1) return;
+    encerrar();
+  }
+
   /**
-   * No navegador o play() do elemento devolve uma promessa que **rejeita**
-   * quando o autoplay é recusado (iPhone sem permissão, Modo de Baixo Consumo,
-   * aba em segundo plano). É o sinal exato de que não vai tocar — melhor que
-   * ficar adivinhando por tempo. Recusou, a abertura sai de cena na hora: ir
-   * direto pra loja é muito melhor que encarar uma tela parada.
+   * O iPhone bloqueia o autoplay quando está em Modo de Baixo Consumo ou com a
+   * reprodução automática desligada — é trava do sistema, nenhum código
+   * contorna. Em vez de engolir a abertura, oferecemos: um toque é gesto do
+   * usuário, e com gesto o iOS libera. Quem não tocar entra na loja sozinho,
+   * pra abertura nunca virar um muro na porta da loja.
    */
-  function tocar(tentativa = 0) {
+  function oferecerToque() {
+    if (jaSaiu.current || player.currentTime > 0.1) return;
+    setFase('oferecendo');
+    armarLimite(ESPERA_TOQUE_MS);
+  }
+
+  /**
+   * `aoFalhar` separa os dois caminhos: quando o autoplay é recusado ainda vale
+   * convidar pro toque, mas quando é o próprio toque que falha não há segunda
+   * carta na manga — aí a abertura sai de cena na hora.
+   */
+  function tocar(aoFalhar: () => void, tentativa = 0) {
     if (Platform.OS !== 'web') {
       player.play();
+      setFase('tocando');
       return;
     }
 
@@ -67,14 +100,22 @@ export function IntroVideo({ onFim }: { onFim: () => void }) {
     // O status pode chegar antes do React montar o <video>. Esperar alguns
     // quadros é bem melhor que desistir da abertura por uma corrida de tempo.
     if (!video) {
-      if (tentativa < 20) setTimeout(() => tocar(tentativa + 1), 50);
+      if (tentativa < 20) setTimeout(() => tocar(aoFalhar, tentativa + 1), 50);
       else encerrar();
       return;
     }
 
     marcarParaTocarEmbutido(video);
+    // No navegador o play() devolve uma promessa que **rejeita** quando o
+    // autoplay é negado: é o sinal exato, na hora, sem adivinhar por tempo.
     const promessa = video.play() as Promise<void> | undefined;
-    promessa?.catch(() => encerrar());
+    if (!promessa?.then) return setFase('tocando');
+
+    promessa.then(() => {
+      if (jaSaiu.current) return;
+      setFase('tocando');
+      armarLimite(LIMITE_TOCANDO_MS);
+    }, aoFalhar);
   }
 
   // Dar play no callback de criação não pega no web: naquele momento a fonte
@@ -84,22 +125,20 @@ export function IntroVideo({ onFim }: { onFim: () => void }) {
     if (status === 'error') return encerrar();
     if (status !== 'readyToPlay') return;
 
-    tocar();
+    tocar(oferecerToque);
 
-    // Segunda rede, pra quando o play() resolve mas nada anda — foi o que o
-    // Chrome faz com vídeo mudo em aba de segundo plano: aceita o play e para
-    // sozinho depois. Sem isso a abertura ficaria parada até o limite.
-    setTimeout(() => {
-      if (jaSaiu.current || player.currentTime > 0.1) return;
-      encerrar();
-    }, ESPERA_PLAY_MS);
+    // Segunda rede, pra quando o play() é aceito mas nada anda — o Chrome faz
+    // isso com vídeo mudo em aba de segundo plano: aceita e para sozinho.
+    setTimeout(oferecerToque, ESPERA_PLAY_MS);
   });
 
   useEventListener(player, 'playToEnd', encerrar);
 
   useEffect(() => {
-    const timer = setTimeout(encerrar, LIMITE_MS);
-    return () => clearTimeout(timer);
+    armarLimite(LIMITE_CARREGANDO_MS);
+    return () => {
+      if (limite.current) clearTimeout(limite.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -117,6 +156,14 @@ export function IntroVideo({ onFim }: { onFim: () => void }) {
     }, 50);
     return () => clearInterval(timer);
   }, []);
+
+  function aoTocarNoConvite() {
+    // O toque é a última tentativa: se nem com gesto o vídeo anda, entra na
+    // loja em vez de deixar o cliente olhando uma tela parada.
+    armarLimite(LIMITE_TOCANDO_MS);
+    tocar(encerrar);
+    setTimeout(encerrarSeParado, ESPERA_PLAY_MS);
+  }
 
   if (saindo) return null;
 
@@ -139,6 +186,23 @@ export function IntroVideo({ onFim }: { onFim: () => void }) {
         nativeControls={false}
         allowsPictureInPicture={false}
       />
+
+      {fase === 'oferecendo' ? (
+        // Cobre a tela inteira: o toque em qualquer lugar vale como gesto.
+        <Pressable onPress={aoTocarNoConvite} style={styles.convite}>
+          <Image
+            source={require('@/assets/images/hero-logo.png')}
+            style={styles.fundoLogo}
+            contentFit="contain"
+          />
+          <View style={styles.conviteChamada}>
+            <Ionicons name="play-circle" size={28} color={Colors.light.primaryText} />
+            <ThemedText type="smallBold" style={styles.conviteTexto}>
+              Toque para ver a abertura
+            </ThemedText>
+          </View>
+        </Pressable>
+      ) : null}
 
       {/* Quem já viu não precisa esperar os 10 segundos de novo. */}
       <Pressable onPress={encerrar} style={styles.pular} hitSlop={8}>
@@ -168,6 +232,25 @@ const styles = StyleSheet.create({
   },
   video: {
     flex: 1,
+  },
+  convite: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.four,
+    backgroundColor: Colors.light.primary,
+  },
+  conviteChamada: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.three,
+    borderRadius: Radius.pill,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+  },
+  conviteTexto: {
+    color: Colors.light.primaryText,
   },
   pular: {
     position: 'absolute',
