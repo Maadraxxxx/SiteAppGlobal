@@ -7,6 +7,7 @@ import * as enderecosService from './service';
 // cliente deixa em branco, e optional sozinho recusaria null.
 const enderecoSchema = z.object({
   apelido: z.string().max(40).nullish(),
+  documento: z.string().max(20).nullish(),
   cep: z.string().min(8),
   logradouro: z.string().min(2),
   numero: z.string().min(1),

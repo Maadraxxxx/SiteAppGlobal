@@ -12,6 +12,22 @@ export function formatarCep(valor: string) {
   return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
 }
 
+/** Até 11 dígitos vira CPF; acima disso, CNPJ. */
+export function formatarDocumento(valor: string) {
+  const d = valor.replace(/\D/g, '').slice(0, 14);
+  if (d.length <= 11) {
+    return d
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  }
+  return d
+    .replace(/(\d{2})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1/$2')
+    .replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+}
+
 export function EnderecoForm({
   inicial,
   salvando,
@@ -24,6 +40,7 @@ export function EnderecoForm({
   onCancelar?: () => void;
 }) {
   const [apelido, setApelido] = useState(inicial?.apelido ?? '');
+  const [documento, setDocumento] = useState(inicial?.documento ?? '');
   const [cep, setCep] = useState(inicial ? formatarCep(inicial.cep) : '');
   const [logradouro, setLogradouro] = useState(inicial?.logradouro ?? '');
   const [numero, setNumero] = useState(inicial?.numero ?? '');
@@ -66,6 +83,7 @@ export function EnderecoForm({
     setError(undefined);
     onSalvar({
       apelido: apelido.trim() || null,
+      documento: documento.replace(/\D/g, '') || null,
       cep: cep.replace(/\D/g, ''),
       logradouro: logradouro.trim(),
       numero: numero.trim(),
@@ -79,6 +97,15 @@ export function EnderecoForm({
   return (
     <View style={styles.container}>
       <TextField label="Apelido (opcional)" value={apelido} onChangeText={setApelido} placeholder="Casa, Trabalho..." />
+
+      <TextField
+        label="CPF ou CNPJ"
+        value={documento}
+        onChangeText={(v) => setDocumento(formatarDocumento(v))}
+        keyboardType="number-pad"
+        maxLength={18}
+        placeholder="000.000.000-00"
+      />
 
       <View style={styles.linha}>
         <View style={styles.cepCampo}>

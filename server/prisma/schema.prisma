@@ -165,6 +165,8 @@ model Endereco {
   usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   apelido     String? // "Casa", "Trabalho"
+  /// CPF/CNPJ do destinatario — as transportadoras exigem pra emitir etiqueta.
+  documento   String?
   cep         String
   logradouro  String
   numero      String
@@ -281,6 +283,13 @@ model Pedido {
   freteServico        String? // ex: "PAC", "SEDEX", "Jadlog .Package"
   freteTransportadora String?
   fretePrazoDias      Int?
+
+  /// Preenchido ao gerar a etiqueta no Melhor Envio, ou colado a mao pelo admin
+  /// quando o envio e feito por fora (balcao dos Correios, por exemplo).
+  codigoRastreio     String?
+  urlEtiqueta        String?
+  /// id do envio no Melhor Envio, usado pra consultar o rastreio deles
+  melhorEnvioEnvioId String?
 
   itens      ItemPedido[]
   pagamentos Pagamento[]

@@ -145,14 +145,41 @@ export interface Pedido {
   /** subtotal + frete — é o que vai pra cobrança */
   total: string;
   cepDestino: string | null;
+  /** Cópia do endereço no momento da compra — não muda se o cliente editar depois. */
+  enderecoLogradouro: string | null;
+  enderecoNumero: string | null;
+  enderecoComplemento: string | null;
+  enderecoBairro: string | null;
+  enderecoCidade: string | null;
+  enderecoUf: string | null;
   freteValor: string | null;
   freteServico: string | null;
   freteTransportadora: string | null;
   fretePrazoDias: number | null;
+  codigoRastreio: string | null;
+  urlEtiqueta: string | null;
+  melhorEnvioEnvioId: string | null;
   createdAt: string;
   itens: ItemPedido[];
   pagamentos: Pagamento[];
   usuario: { id: string; nome: string; email: string };
+}
+
+export interface EventoRastreio {
+  status?: string;
+  description?: string;
+  created_at?: string;
+  location?: string;
+}
+
+export interface Rastreio {
+  codigoRastreio: string | null;
+  transportadora: string | null;
+  servico: string | null;
+  prazoDias: number | null;
+  status: StatusPedido;
+  statusTransportadora?: string;
+  eventos: EventoRastreio[];
 }
 
 export interface OpcaoFrete {
@@ -166,6 +193,8 @@ export interface OpcaoFrete {
 export interface Endereco {
   id: string;
   apelido: string | null;
+  /** CPF/CNPJ — a transportadora exige na etiqueta. */
+  documento: string | null;
   cep: string;
   logradouro: string;
   numero: string;

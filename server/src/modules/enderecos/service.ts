@@ -4,6 +4,8 @@ import { apenasDigitos, cepValido } from '../../lib/melhor-envio';
 
 export interface EnderecoEntrada {
   apelido?: string | null;
+  /** CPF/CNPJ — exigido pela transportadora na etiqueta. */
+  documento?: string | null;
   cep: string;
   logradouro: string;
   numero: string;
@@ -31,6 +33,7 @@ function normalizar(entrada: EnderecoEntrada) {
   if (!cepValido(entrada.cep)) throw badRequest('CEP invalido');
   return {
     apelido: entrada.apelido?.trim() || null,
+    documento: entrada.documento ? apenasDigitos(entrada.documento) : null,
     cep: apenasDigitos(entrada.cep),
     logradouro: entrada.logradouro.trim(),
     numero: entrada.numero.trim(),

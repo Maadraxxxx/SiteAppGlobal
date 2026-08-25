@@ -2,10 +2,12 @@ import type { Pedido, StatusPedido } from '@global-decora/shared';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { envioApi, urlDeDownload } from '@/api/envio';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { ROTULO_STATUS, StatusPedidoTag } from '@/components/StatusPedidoTag';
+import { TextField } from '@/components/TextField';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useAdminPedidos, useAtualizarStatusPedido } from '@/hooks/usePedidos';
@@ -30,11 +32,45 @@ function dataHora(iso: string) {
 }
 
 export default function AdminPedidosScreen() {
-  const { data, isLoading } = useAdminPedidos();
+  const { data, isLoading, refetch: recarregar } = useAdminPedidos();
   const atualizar = useAtualizarStatusPedido();
   const [aberto, setAberto] = useState<Pedido | null>(null);
   const [error, setError] = useState<string>();
+  const [codigoRastreio, setCodigoRastreio] = useState('');
+  const [gerandoEtiqueta, setGerandoEtiqueta] = useState(false);
+  const [salvandoRastreio, setSalvandoRastreio] = useState(false);
   const theme = useTheme();
+
+  async function handleGerarEtiqueta() {
+    if (!aberto) return;
+    setError(undefined);
+    setGerandoEtiqueta(true);
+    try {
+      const { pedido } = await envioApi.gerarEtiqueta(aberto.id);
+      setAberto(pedido);
+      await recarregar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Nao foi possivel gerar a etiqueta');
+    } finally {
+      setGerandoEtiqueta(false);
+    }
+  }
+
+  async function handleSalvarRastreio() {
+    if (!aberto || !codigoRastreio.trim()) return;
+    setError(undefined);
+    setSalvandoRastreio(true);
+    try {
+      const { pedido } = await envioApi.definirRastreio(aberto.id, codigoRastreio.trim());
+      setAberto(pedido);
+      setCodigoRastreio('');
+      await recarregar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Nao foi possivel salvar o codigo');
+    } finally {
+      setSalvandoRastreio(false);
+    }
+  }
 
   async function handleStatus(status: StatusPedido) {
     if (!aberto) return;
@@ -199,9 +235,90 @@ export default function AdminPedidosScreen() {
                     <ThemedText type="small" themeColor="textSecondary">
                       Entrega
                     </ThemedText>
-                    <ThemedText type="smallBold">CEP {aberto.cepDestino}</ThemedText>
+                    <ThemedText type="smallBold">
+                      {[aberto.enderecoLogradouro, aberto.enderecoNumero].filter(Boolean).join(', ')}
+                    </ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {[aberto.enderecoBairro, aberto.enderecoCidade].filter(Boolean).join(', ')}
+                      {aberto.enderecoUf ? `/${aberto.enderecoUf}` : ''} · CEP {aberto.cepDestino}
+                    </ThemedText>
                   </View>
                 ) : null}
+
+                {/* Baixar a arte de cada item — é o que vai pra produção. */}
+                <View style={styles.bloco}>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Arte para produzir
+                  </ThemedText>
+                  {aberto.itens.map((item) => {
+                    const arte = item.geracaoImagem?.imagemUrl ?? item.produto?.imagemUrl;
+                    if (!arte) return null;
+                    const nome = `${item.produto?.nome ?? 'produto'}${
+                      item.geracaoImagem ? `-${item.geracaoImagem.tema}` : ''
+                    }`;
+                    return (
+                      <Pressable
+                        key={item.id}
+                        onPress={() => Linking.openURL(urlDeDownload(arte, nome))}
+                        style={({ pressed }) => [
+                          styles.acaoLinha,
+                          { borderColor: theme.border, opacity: pressed ? 0.6 : 1 },
+                        ]}>
+                        <Ionicons name="download-outline" size={18} color={theme.primary} />
+                        <ThemedText type="small" themeColor="primary" numberOfLines={1} style={styles.itemNome}>
+                          Baixar {item.geracaoImagem ? 'arte personalizada' : 'imagem'} ·{' '}
+                          {item.produto?.nome ?? 'produto'}
+                        </ThemedText>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                {/* Etiqueta e rastreio */}
+                <View style={styles.bloco}>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Envio
+                  </ThemedText>
+
+                  {aberto.codigoRastreio ? (
+                    <ThemedText type="smallBold">Rastreio: {aberto.codigoRastreio}</ThemedText>
+                  ) : null}
+
+                  {aberto.urlEtiqueta ? (
+                    <Pressable
+                      onPress={() => Linking.openURL(aberto.urlEtiqueta as string)}
+                      style={({ pressed }) => [
+                        styles.acaoLinha,
+                        { borderColor: theme.border, opacity: pressed ? 0.6 : 1 },
+                      ]}>
+                      <Ionicons name="document-text-outline" size={18} color={theme.primary} />
+                      <ThemedText type="small" themeColor="primary">
+                        Baixar etiqueta (PDF)
+                      </ThemedText>
+                    </Pressable>
+                  ) : (
+                    <Button
+                      title="Gerar etiqueta no Melhor Envio"
+                      variant="ghost"
+                      loading={gerandoEtiqueta}
+                      onPress={handleGerarEtiqueta}
+                    />
+                  )}
+
+                  {/* Quem despacha por fora cola o código na mão. */}
+                  <View style={styles.rastreioLinha}>
+                    <View style={styles.rastreioCampo}>
+                      <TextField
+                        label="Ou cole o código de rastreio"
+                        value={codigoRastreio}
+                        onChangeText={setCodigoRastreio}
+                        autoCapitalize="characters"
+                        placeholder="AA123456789BR"
+                      />
+                    </View>
+                    <Button title="Salvar" onPress={handleSalvarRastreio} loading={salvandoRastreio} />
+                  </View>
+                </View>
 
                 <View style={styles.bloco}>
                   <ThemedText type="small" themeColor="textSecondary">
@@ -305,6 +422,24 @@ const styles = StyleSheet.create({
   contadorTexto: {
     fontSize: 11,
     lineHeight: 14,
+  },
+  acaoLinha: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Radius.small,
+    borderWidth: 1,
+  },
+  rastreioLinha: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: Spacing.two,
+    marginTop: Spacing.one,
+  },
+  rastreioCampo: {
+    flex: 1,
   },
   itemComFoto: {
     flexDirection: 'row',

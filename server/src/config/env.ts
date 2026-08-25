@@ -39,6 +39,19 @@ const envSchema = z.object({
   // CEP de onde as encomendas saem (a loja). Sem ele não dá pra cotar.
   FRETE_CEP_ORIGEM: z.string().optional(),
 
+  // Endereço completo do remetente. Só o CEP basta pra cotar, mas a etiqueta
+  // exige o endereço inteiro e o documento — é o que vai impresso nela.
+  REMETENTE_NOME: z.string().optional(),
+  REMETENTE_DOCUMENTO: z.string().optional(), // CPF ou CNPJ, só números
+  REMETENTE_TELEFONE: z.string().optional(),
+  REMETENTE_EMAIL: z.string().optional(),
+  REMETENTE_LOGRADOURO: z.string().optional(),
+  REMETENTE_NUMERO: z.string().optional(),
+  REMETENTE_COMPLEMENTO: z.string().optional(),
+  REMETENTE_BAIRRO: z.string().optional(),
+  REMETENTE_CIDADE: z.string().optional(),
+  REMETENTE_UF: z.string().optional(),
+
   // Login com Google. São os client IDs do Google Cloud (OAuth 2.0). O servidor
   // usa todos como destinatários aceitos ao conferir o token; o app usa o da
   // plataforma dele. Só o WEB é obrigatório pra funcionar no site.

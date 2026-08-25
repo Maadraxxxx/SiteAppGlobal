@@ -72,14 +72,21 @@ export default function PedidosScreen() {
         contentContainerStyle={styles.listaConteudo}
         renderItem={({ item }) => {
           const aguardando = item.status === 'AGUARDANDO_PAGAMENTO';
+          const podeRastrear = !aguardando && item.status !== 'CANCELADO';
           const capa = item.itens.find((i) => i.produto?.imagemUrl)?.produto?.imagemUrl;
 
           return (
             <Pressable
-              onPress={() => (aguardando ? router.push(ROTAS.pagamento(item.id)) : undefined)}
+              onPress={() =>
+                aguardando
+                  ? router.push(ROTAS.pagamento(item.id))
+                  : podeRastrear
+                    ? router.push(ROTAS.rastreio(item.id))
+                    : undefined
+              }
               style={({ pressed }) => [
                 styles.card,
-                { backgroundColor: theme.backgroundElement, opacity: pressed && aguardando ? 0.7 : 1 },
+                { backgroundColor: theme.backgroundElement, opacity: pressed && (aguardando || podeRastrear) ? 0.7 : 1 },
               ]}>
               <View style={styles.cardTopo}>
                 {capa ? (
@@ -103,6 +110,13 @@ export default function PedidosScreen() {
                   <Ionicons name="qr-code-outline" size={16} color={theme.primary} />
                   <ThemedText type="small" themeColor="primary">
                     Finalizar pagamento
+                  </ThemedText>
+                </View>
+              ) : podeRastrear ? (
+                <View style={[styles.chamada, { borderColor: theme.border }]}>
+                  <Ionicons name="cube-outline" size={16} color={theme.primary} />
+                  <ThemedText type="small" themeColor="primary">
+                    {item.codigoRastreio ? 'Acompanhar entrega' : 'Ver andamento'}
                   </ThemedText>
                 </View>
               ) : null}

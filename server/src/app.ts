@@ -9,6 +9,7 @@ import authRoutes from './modules/auth/routes';
 import bannersRoutes from './modules/banners/routes';
 import categoriasRoutes from './modules/categorias/routes';
 import enderecosRoutes from './modules/enderecos/routes';
+import envioRoutes from './modules/envio/routes';
 import estilosRoutes from './modules/estilos/routes';
 import formatosRoutes from './modules/formatos/routes';
 import freteRoutes from './modules/frete/routes';
@@ -37,6 +38,23 @@ export function buildApp() {
         error: { code: 'VALIDATION_ERROR', message: 'Dados invalidos', issues: error.flatten() },
       });
     }
+    // Erro do proprio Fastify (corpo malformado, payload grande demais...) ja
+    // vem com o status certo. Sem isso virava um 500 generico que escondia a
+    // causa — o cliente merece saber que o problema foi na requisicao dele.
+    const doFastify = error as { statusCode?: number; code?: string; message?: string };
+    if (
+      typeof doFastify.statusCode === 'number' &&
+      doFastify.statusCode >= 400 &&
+      doFastify.statusCode < 500
+    ) {
+      return reply.code(doFastify.statusCode).send({
+        error: {
+          code: doFastify.code ?? 'BAD_REQUEST',
+          message: doFastify.message ?? 'Requisicao invalida',
+        },
+      });
+    }
+
     app.log.error(error);
     return reply.code(500).send({ error: { code: 'INTERNAL_ERROR', message: 'Erro interno' } });
   });
@@ -50,6 +68,7 @@ export function buildApp() {
       api.register(categoriasRoutes);
       api.register(formatosRoutes);
       api.register(enderecosRoutes);
+      api.register(envioRoutes);
       api.register(estilosRoutes);
       api.register(freteRoutes);
       api.register(iaRoutes);
