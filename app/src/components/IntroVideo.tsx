@@ -17,6 +17,14 @@ const LIMITE_TOCANDO_MS = 14000;
 const ESPERA_PLAY_MS = 2000;
 /** Quanto o convite pra tocar fica na tela antes de entrar na loja sozinho. */
 const ESPERA_TOQUE_MS = 4500;
+/**
+ * Quanto a logo de espera fica antes de convidar pro toque. O iPhone adia o
+ * carregamento do vídeo até haver gesto do usuário, então o "readyToPlay" pode
+ * nunca chegar — sem esta saída o cliente encarava a logo até o limite.
+ */
+const ESPERA_CARREGANDO_MS = 2000;
+/** Depois do toque o iPhone só então começa a baixar o vídeo — precisa de mais folga. */
+const ESPERA_APOS_TOQUE_MS = 5000;
 
 type Fase = 'carregando' | 'tocando' | 'oferecendo';
 
@@ -35,6 +43,14 @@ function marcarParaTocarEmbutido(video: HTMLVideoElement) {
   video.setAttribute('webkit-playsinline', '');
   video.muted = true;
   video.setAttribute('muted', '');
+
+  // O contentFit do expo-video nao estava dimensionando o elemento no web: o
+  // <video> ficava do tamanho do quadro original (720x1280) e estourava a
+  // tela, cortando as laterais. Mandamos no CSS do proprio elemento, que e o
+  // unico jeito de garantir que o quadro inteiro apareca em qualquer tela.
+  video.style.width = '100%';
+  video.style.height = '100%';
+  video.style.objectFit = 'contain';
 }
 
 export function IntroVideo({ onFim }: { onFim: () => void }) {
@@ -65,9 +81,13 @@ export function IntroVideo({ onFim }: { onFim: () => void }) {
     onFim();
   }
 
-  /** Só encerra se de fato não andou — o vídeo pode ter começado no meio tempo. */
+  /** O vídeo pode ter começado no meio tempo — só conta como parado se não deu sinal. */
+  function estaAndando() {
+    return player.playing || player.currentTime > 0.1;
+  }
+
   function encerrarSeParado() {
-    if (player.currentTime > 0.1) return;
+    if (estaAndando()) return;
     encerrar();
   }
 
@@ -79,7 +99,7 @@ export function IntroVideo({ onFim }: { onFim: () => void }) {
    * pra abertura nunca virar um muro na porta da loja.
    */
   function oferecerToque() {
-    if (jaSaiu.current || player.currentTime > 0.1) return;
+    if (jaSaiu.current || estaAndando()) return;
     setFase('oferecendo');
     armarLimite(ESPERA_TOQUE_MS);
   }
@@ -136,7 +156,15 @@ export function IntroVideo({ onFim }: { onFim: () => void }) {
 
   useEffect(() => {
     armarLimite(LIMITE_CARREGANDO_MS);
+
+    // O iPhone só carrega o vídeo depois de um gesto, então o "readyToPlay"
+    // pode nunca chegar e a abertura ficaria parada na logo. Passados 2s sem
+    // sinal de vida, convidamos pro toque — que é justamente o gesto que
+    // destrava o carregamento no iOS.
+    const espera = setTimeout(oferecerToque, ESPERA_CARREGANDO_MS);
+
     return () => {
+      clearTimeout(espera);
       if (limite.current) clearTimeout(limite.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -159,10 +187,11 @@ export function IntroVideo({ onFim }: { onFim: () => void }) {
 
   function aoTocarNoConvite() {
     // O toque é a última tentativa: se nem com gesto o vídeo anda, entra na
-    // loja em vez de deixar o cliente olhando uma tela parada.
+    // loja em vez de deixar o cliente olhando uma tela parada. A folga aqui é
+    // maior que a do autoplay porque no iPhone o carregamento só começa agora.
     armarLimite(LIMITE_TOCANDO_MS);
     tocar(encerrar);
-    setTimeout(encerrarSeParado, ESPERA_PLAY_MS);
+    setTimeout(encerrarSeParado, ESPERA_APOS_TOQUE_MS);
   }
 
   if (saindo) return null;
