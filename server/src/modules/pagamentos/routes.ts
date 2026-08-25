@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { env } from '../../config/env';
+import * as iaService from '../ia/service';
 import * as pagamentosService from './service';
 
 /**
@@ -48,7 +49,10 @@ export default async function pagamentosRoutes(app: FastifyInstance) {
     }
 
     try {
-      await pagamentosService.processarNotificacao(dataId);
+      // O mesmo webhook atende pagamento de pedido e de credito de IA;
+      // o id do MP e unico em cada tabela, entao tenta uma e cai na outra.
+      const eraCredito = await iaService.processarNotificacao(dataId);
+      if (!eraCredito) await pagamentosService.processarNotificacao(dataId);
     } catch (erro) {
       // Responder erro faz o MP reenviar; logamos e devolvemos 200 pra
       // notificacao de pagamento que nao e nosso nao virar retry infinito.

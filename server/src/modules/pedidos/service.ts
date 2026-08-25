@@ -14,7 +14,7 @@ const STATUS_PAGOS: StatusPedido[] = [
 ];
 
 const INCLUDE_PEDIDO = {
-  itens: { include: { produto: true } },
+  itens: { include: { produto: true, geracaoImagem: true } },
   pagamentos: { orderBy: { createdAt: 'desc' } },
   usuario: { select: { id: true, nome: true, email: true } },
 } satisfies Prisma.PedidoInclude;
@@ -48,6 +48,8 @@ export async function resumoDoMes() {
 export interface ItemEntrada {
   produtoId: string;
   quantidade: number;
+  /** Encomenda da versao personalizada pela IA, em vez da arte original. */
+  geracaoId?: string;
 }
 
 export interface FreteEntrada {
@@ -60,29 +62,52 @@ export interface FreteEntrada {
 export async function criarPedido(usuarioId: string, itens: ItemEntrada[], frete?: FreteEntrada) {
   if (!itens.length) throw badRequest('O pedido precisa de pelo menos um item');
 
-  // Junta duplicados: dois itens do mesmo produto viram um com a soma.
-  const porProduto = new Map<string, number>();
+  // Junta duplicados. A chave inclui a geracao: o mesmo painel com dois temas
+  // diferentes sao duas linhas, nao uma com quantidade 2.
+  const agrupado = new Map<string, ItemEntrada>();
   for (const item of itens) {
-    porProduto.set(item.produtoId, (porProduto.get(item.produtoId) ?? 0) + item.quantidade);
+    const chave = `${item.produtoId}|${item.geracaoId ?? ''}`;
+    const atual = agrupado.get(chave);
+    if (atual) atual.quantidade += item.quantidade;
+    else agrupado.set(chave, { ...item });
   }
+  const entradas = [...agrupado.values()];
 
   const produtos = await prisma.produto.findMany({
-    where: { id: { in: [...porProduto.keys()] }, ativo: true },
+    where: { id: { in: [...new Set(entradas.map((e) => e.produtoId))] }, ativo: true },
   });
+  const porId = new Map(produtos.map((p) => [p.id, p]));
 
-  if (produtos.length !== porProduto.size) {
+  if (entradas.some((e) => !porId.has(e.produtoId))) {
     throw badRequest('Algum produto do carrinho nao esta mais disponivel');
   }
 
-  // O preco vem do banco, nunca do cliente — senao daria pra fechar pedido
-  // com o valor que o app mandasse.
-  const linhas = produtos.map((produto) => {
-    const quantidade = porProduto.get(produto.id) as number;
+  // Confere que cada imagem gerada e mesmo daquele cliente e daquele produto —
+  // senao daria pra encomendar a arte de outra pessoa passando o id dela.
+  const geracaoIds = entradas.map((e) => e.geracaoId).filter((id): id is string => !!id);
+  const geracoes = geracaoIds.length
+    ? await prisma.geracaoImagem.findMany({ where: { id: { in: geracaoIds }, usuarioId } })
+    : [];
+  const geracaoPorId = new Map(geracoes.map((g) => [g.id, g]));
+
+  for (const entrada of entradas) {
+    if (!entrada.geracaoId) continue;
+    const geracao = geracaoPorId.get(entrada.geracaoId);
+    if (!geracao || geracao.produtoId !== entrada.produtoId) {
+      throw badRequest('Essa personalizacao nao esta disponivel');
+    }
+  }
+
+  // O preco vem do banco, nunca do cliente. A versao personalizada custa o
+  // mesmo que a original: muda so a arte que vai ser produzida.
+  const linhas = entradas.map((entrada) => {
+    const produto = porId.get(entrada.produtoId) as (typeof produtos)[number];
     return {
       tipo: 'PRODUTO' as const,
       produtoId: produto.id,
-      quantidade,
+      quantidade: entrada.quantidade,
       precoUnitario: produto.preco,
+      geracaoImagemId: entrada.geracaoId ?? null,
     };
   });
 

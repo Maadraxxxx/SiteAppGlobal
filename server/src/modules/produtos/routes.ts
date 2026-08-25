@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { authenticate, requireAdmin } from '../../middleware/auth';
 import { gerarImagemComTema } from '../../lib/openai-image';
+import * as iaService from '../ia/service';
 import * as produtosService from './service';
 
 const produtoSchema = z.object({
@@ -46,12 +47,37 @@ export default async function produtosRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const { id } = request.params as { id: string };
       const { tema } = z.object({ tema: z.string().min(3) }).parse(request.body);
+      const usuarioId = request.user.sub;
+
       const produto = await produtosService.getProduto(id);
       if (!produto.imagemUrl) {
         return reply.code(400).send({ error: { code: 'BAD_REQUEST', message: 'Produto nao tem imagem para adaptar' } });
       }
-      const imagemUrl = await gerarImagemComTema(produto.imagemUrl, tema);
-      return reply.send({ imagemUrl });
+
+      // Cobra a cota (ou um credito) antes de chamar a IA: gerar primeiro e
+      // cobrar depois deixaria o cliente gerar de graca se a cobranca falhasse.
+      const { paga } = await iaService.reservarGeracao(usuarioId);
+
+      let imagemUrl: string;
+      try {
+        imagemUrl = await gerarImagemComTema(produto.imagemUrl, tema);
+      } catch (erro) {
+        // Falhou depois de descontar: devolve o credito, senao o cliente paga
+        // por uma imagem que nunca recebeu.
+        if (paga) await iaService.estornarGeracao(usuarioId);
+        throw erro;
+      }
+
+      const geracao = await iaService.registrarGeracao({
+        usuarioId,
+        produtoId: produto.id,
+        tema,
+        imagemUrl,
+        paga,
+      });
+
+      const saldo = await iaService.saldo(usuarioId);
+      return reply.send({ geracaoId: geracao.id, imagemUrl, saldo });
     },
   );
 

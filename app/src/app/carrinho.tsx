@@ -7,19 +7,20 @@ import { Screen } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
-import { useCart, type CartItem } from '@/context/CartContext';
+import { chaveDoItem, useCart, type CartItem } from '@/context/CartContext';
 import { ROTAS } from '@/lib/rotas';
 import { useTheme } from '@/hooks/use-theme';
 
 function CartRow({ item }: { item: CartItem }) {
   const { updateQuantidade, removeItem } = useCart();
   const theme = useTheme();
-  const { produto, quantidade } = item;
+  const { produto, quantidade, geracao } = item;
+  const chave = chaveDoItem(item);
 
   return (
     <View style={[styles.row, { backgroundColor: theme.backgroundElement }]}>
-      {produto.imagemUrl ? (
-        <Image source={{ uri: produto.imagemUrl }} style={styles.thumb} contentFit="cover" />
+      {geracao?.imagemUrl || produto.imagemUrl ? (
+        <Image source={{ uri: geracao?.imagemUrl ?? (produto.imagemUrl as string) }} style={styles.thumb} contentFit="cover" />
       ) : (
         <View style={[styles.thumb, { backgroundColor: theme.secondary }]} />
       )}
@@ -28,13 +29,18 @@ function CartRow({ item }: { item: CartItem }) {
         <ThemedText type="smallBold" numberOfLines={1}>
           {produto.nome}
         </ThemedText>
+        {geracao ? (
+          <ThemedText type="small" themeColor="primary" numberOfLines={1}>
+            Tema: {geracao.tema}
+          </ThemedText>
+        ) : null}
         <ThemedText type="small" themeColor="primary">
           R$ {Number(produto.preco).toFixed(2).replace('.', ',')}
         </ThemedText>
 
         <View style={styles.stepper}>
           <Pressable
-            onPress={() => updateQuantidade(produto.id, quantidade - 1)}
+            onPress={() => updateQuantidade(chave, quantidade - 1)}
             style={[styles.stepperButton, { borderColor: theme.border }]}
             hitSlop={8}>
             <Ionicons name="remove" size={16} color={theme.text} />
@@ -43,7 +49,7 @@ function CartRow({ item }: { item: CartItem }) {
             {quantidade}
           </ThemedText>
           <Pressable
-            onPress={() => updateQuantidade(produto.id, quantidade + 1)}
+            onPress={() => updateQuantidade(chave, quantidade + 1)}
             style={[styles.stepperButton, { borderColor: theme.border }]}
             hitSlop={8}>
             <Ionicons name="add" size={16} color={theme.text} />
@@ -51,7 +57,7 @@ function CartRow({ item }: { item: CartItem }) {
         </View>
       </View>
 
-      <Pressable onPress={() => removeItem(produto.id)} hitSlop={8} style={styles.removeButton}>
+      <Pressable onPress={() => removeItem(chave)} hitSlop={8} style={styles.removeButton}>
         <Ionicons name="trash" size={18} color={theme.danger} />
       </Pressable>
     </View>
@@ -85,7 +91,7 @@ export default function CarrinhoScreen() {
     <Screen scroll={false} style={styles.screen}>
       <FlatList
         data={items}
-        keyExtractor={(item) => item.produto.id}
+        keyExtractor={(item) => chaveDoItem(item)}
         style={styles.list}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => <CartRow item={item} />}

@@ -91,11 +91,40 @@ export type StatusPedido =
 
 export type StatusPagamento = 'PENDENTE' | 'APROVADO' | 'REJEITADO' | 'CANCELADO';
 
+export interface GeracaoImagem {
+  id: string;
+  tema: string;
+  imagemUrl: string;
+  paga: boolean;
+  createdAt: string;
+}
+
+/** Quantas gerações o cliente ainda tem hoje e quantos créditos comprados restam. */
+export interface SaldoIA {
+  gratuitasPorDia: number;
+  gratuitasUsadasHoje: number;
+  gratuitasRestantes: number;
+  creditos: number;
+  precoGeracao: number;
+  podeGerar: boolean;
+}
+
+export interface CompraCreditoIA {
+  id: string;
+  quantidade: number;
+  valor: string;
+  status: StatusPagamento;
+  qrCodeBase64: string | null;
+  qrCodeCopiaCola: string | null;
+}
+
 export interface ItemPedido {
   id: string;
   quantidade: number;
   precoUnitario: string;
   produto: Produto | null;
+  /** Presente quando o cliente encomendou a versão personalizada pela IA. */
+  geracaoImagem: GeracaoImagem | null;
 }
 
 export interface Pagamento {

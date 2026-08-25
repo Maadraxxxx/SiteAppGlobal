@@ -12,6 +12,7 @@ import enderecosRoutes from './modules/enderecos/routes';
 import estilosRoutes from './modules/estilos/routes';
 import formatosRoutes from './modules/formatos/routes';
 import freteRoutes from './modules/frete/routes';
+import iaRoutes from './modules/ia/routes';
 import pagamentosRoutes from './modules/pagamentos/routes';
 import pedidosRoutes from './modules/pedidos/routes';
 import produtosRoutes from './modules/produtos/routes';
@@ -51,6 +52,7 @@ export function buildApp() {
       api.register(enderecosRoutes);
       api.register(estilosRoutes);
       api.register(freteRoutes);
+      api.register(iaRoutes);
       api.register(pagamentosRoutes);
       api.register(pedidosRoutes);
       api.register(produtosRoutes);

@@ -150,18 +150,25 @@ export default function AdminPedidosScreen() {
                   </ThemedText>
                   {aberto.itens.map((item) => (
                     <View key={item.id} style={styles.itemComFoto}>
-                      {item.produto?.imagemUrl ? (
+                      {item.geracaoImagem?.imagemUrl || item.produto?.imagemUrl ? (
                         <Image
-                          source={{ uri: item.produto.imagemUrl }}
+                          source={{ uri: item.geracaoImagem?.imagemUrl ?? (item.produto?.imagemUrl as string) }}
                           style={styles.itemThumb}
                           contentFit="cover"
                         />
                       ) : (
                         <View style={[styles.itemThumb, { backgroundColor: theme.secondary }]} />
                       )}
-                      <ThemedText type="small" numberOfLines={2} style={styles.itemNome}>
-                        {item.quantidade}x {item.produto?.nome ?? 'Produto removido'}
-                      </ThemedText>
+                      <View style={styles.itemNome}>
+                        <ThemedText type="small" numberOfLines={2}>
+                          {item.quantidade}x {item.produto?.nome ?? 'Produto removido'}
+                        </ThemedText>
+                        {item.geracaoImagem ? (
+                          <ThemedText type="small" themeColor="primary" numberOfLines={1}>
+                            Arte personalizada: {item.geracaoImagem.tema}
+                          </ThemedText>
+                        ) : null}
+                      </View>
                       <ThemedText type="small" themeColor="textSecondary">
                         {moeda(Number(item.precoUnitario) * item.quantidade)}
                       </ThemedText>

@@ -7,7 +7,13 @@ import * as pedidosService from './service';
 
 const criarSchema = z.object({
   itens: z
-    .array(z.object({ produtoId: z.string().uuid(), quantidade: z.number().int().positive() }))
+    .array(
+      z.object({
+        produtoId: z.string().uuid(),
+        quantidade: z.number().int().positive(),
+        geracaoId: z.string().uuid().optional(),
+      }),
+    )
     .min(1),
   frete: z.object({ enderecoId: z.string().uuid(), servicoId: z.number().int() }).optional(),
 });

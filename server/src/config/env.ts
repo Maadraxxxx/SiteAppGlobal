@@ -45,6 +45,11 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID_WEB: z.string().optional(),
   GOOGLE_CLIENT_ID_IOS: z.string().optional(),
   GOOGLE_CLIENT_ID_ANDROID: z.string().optional(),
+
+  // Gerador de imagem: quantas o cliente ganha por dia e quanto custa cada
+  // uma depois disso. Ficam aqui pra dar pra ajustar sem mexer no código.
+  IA_GRATIS_POR_DIA: z.coerce.number().int().min(0).default(2),
+  IA_PRECO_GERACAO: z.coerce.number().positive().default(1),
 });
 
 const parsed = envSchema.safeParse(process.env);

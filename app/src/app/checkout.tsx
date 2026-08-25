@@ -43,7 +43,11 @@ export default function CheckoutScreen() {
 
   const enderecos = data?.items ?? [];
   const enderecoEscolhido = enderecos.find((e) => e.id === enderecoId);
-  const itensParaApi = items.map((i) => ({ produtoId: i.produto.id, quantidade: i.quantidade }));
+  const itensParaApi = items.map((i) => ({
+    produtoId: i.produto.id,
+    quantidade: i.quantidade,
+    geracaoId: i.geracao?.id,
+  }));
   const total = totalPreco + (frete?.preco ?? 0);
 
   // Abre já com o endereço principal marcado, pra não exigir um clique à toa.

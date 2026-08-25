@@ -1,4 +1,4 @@
-import type { PaginatedResult, Produto, ProdutoInput } from '@global-decora/shared';
+import type { PaginatedResult, Produto, ProdutoInput, SaldoIA } from '@global-decora/shared';
 import { apiRequest } from './client';
 
 export interface ProdutoFilters {
@@ -43,7 +43,7 @@ export const produtosApi = {
     apiRequest<{ produto: Produto }>(`/admin/produtos/${id}/reativar`, { method: 'POST' }),
 
   gerarImagemIA: (id: string, tema: string) =>
-    apiRequest<{ imagemUrl: string }>(`/produtos/${id}/gerar-imagem-ia`, {
+    apiRequest<{ geracaoId: string; imagemUrl: string; saldo: SaldoIA }>(`/produtos/${id}/gerar-imagem-ia`, {
       method: 'POST',
       body: { tema },
     }),

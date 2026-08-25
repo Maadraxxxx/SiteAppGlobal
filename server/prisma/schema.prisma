@@ -53,22 +53,26 @@ enum StatusPagamento {
 }
 
 model Usuario {
-  id        String   @id @default(uuid())
-  nome      String
-  email     String   @unique
+  id         String   @id @default(uuid())
+  nome       String
+  email      String   @unique
   // Nulo em conta criada pelo Google: nunca houve senha pra guardar.
-  senhaHash String?
+  senhaHash  String?
   // Identificador do Google (claim 'sub'), pra reconhecer a conta mesmo se o
   // cliente trocar o e-mail depois.
-  googleId  String?  @unique
-  avatarUrl String?
-  role      Role     @default(CLIENTE)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  googleId   String?  @unique
+  avatarUrl  String?
+  role       Role     @default(CLIENTE)
+  // Geracoes de imagem compradas e ainda nao usadas (alem das gratuitas do dia)
+  creditosIA Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   pedidos          Pedido[]
   kitsCustomizados KitCustomizado[]
   enderecos        Endereco[]
+  geracoesIA       GeracaoImagem[]
+  comprasCreditoIA CompraCreditoIA[]
 
   @@map("usuarios")
 }
@@ -147,6 +151,7 @@ model Produto {
   estilo   Estilo @relation(fields: [estiloId], references: [id])
 
   itensPedido ItemPedido[]
+  geracoesIA  GeracaoImagem[]
 
   @@index([categoriaId])
   @@index([formatoId])
@@ -176,6 +181,49 @@ model Endereco {
 
   @@index([usuarioId])
   @@map("enderecos")
+}
+
+/// Uma imagem gerada pela IA. Serve de historico e de base pra contagem diaria.
+model GeracaoImagem {
+  id        String  @id @default(uuid())
+  usuarioId String
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  produtoId String
+  produto   Produto @relation(fields: [produtoId], references: [id])
+
+  tema      String
+  imagemUrl String
+  // false = saiu da cota gratuita do dia; true = consumiu um credito comprado
+  paga      Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  itensPedido ItemPedido[]
+
+  @@index([usuarioId, createdAt])
+  @@map("geracoes_imagem")
+}
+
+/// Compra de creditos de geracao, paga por PIX.
+model CompraCreditoIA {
+  id        String  @id @default(uuid())
+  usuarioId String
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  quantidade Int
+  valor      Decimal         @db.Decimal(10, 2)
+  status     StatusPagamento @default(PENDENTE)
+
+  mercadoPagoPaymentId String? @unique
+  qrCodeBase64         String? @db.Text
+  qrCodeCopiaCola      String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([usuarioId])
+  @@map("compras_credito_ia")
 }
 
 model KitCustomizado {
@@ -254,6 +302,11 @@ model ItemPedido {
 
   quantidade    Int     @default(1)
   precoUnitario Decimal @db.Decimal(10, 2)
+
+  /// Quando o cliente encomenda a versao personalizada pela IA. O preco segue
+  /// o do produto original; muda so a arte a ser produzida.
+  geracaoImagemId String?
+  geracaoImagem   GeracaoImagem? @relation(fields: [geracaoImagemId], references: [id])
 
   @@map("itens_do_pedido")
 }

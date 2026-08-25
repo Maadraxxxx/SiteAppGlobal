@@ -158,7 +158,7 @@ export default function ProdutoDetailScreen() {
         </View>
       </Modal>
 
-      <TemaChatModal visible={chatAberto} onClose={() => setChatAberto(false)} produtoId={produto.id} />
+      <TemaChatModal visible={chatAberto} onClose={() => setChatAberto(false)} produto={produto} />
     </Screen>
   );
 }

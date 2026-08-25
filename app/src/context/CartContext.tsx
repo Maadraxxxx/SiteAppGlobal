@@ -1,19 +1,27 @@
-import type { Produto } from '@global-decora/shared';
+import type { GeracaoImagem, Produto } from '@global-decora/shared';
 import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 import { cartStorage } from '@/lib/storage';
 
 export interface CartItem {
   produto: Produto;
   quantidade: number;
+  /** Quando presente, o cliente encomendou a arte gerada pela IA em vez da original. */
+  geracao?: Pick<GeracaoImagem, 'id' | 'tema' | 'imagemUrl'>;
+}
+
+/** Linha do carrinho = produto + personalizacao. O mesmo painel com dois temas
+ * diferentes sao dois itens, nao um com quantidade 2. */
+export function chaveDoItem(item: Pick<CartItem, 'produto' | 'geracao'>) {
+  return `${item.produto.id}|${item.geracao?.id ?? ''}`;
 }
 
 interface CartContextValue {
   items: CartItem[];
   totalItens: number;
   totalPreco: number;
-  addItem: (produto: Produto, quantidade?: number) => void;
-  removeItem: (produtoId: string) => void;
-  updateQuantidade: (produtoId: string, quantidade: number) => void;
+  addItem: (produto: Produto, quantidade?: number, geracao?: CartItem['geracao']) => void;
+  removeItem: (chave: string) => void;
+  updateQuantidade: (chave: string, quantidade: number) => void;
   clear: () => void;
 }
 
@@ -42,28 +50,29 @@ export function CartProvider({ children }: PropsWithChildren) {
     }
   }, [items, hydrated]);
 
-  function addItem(produto: Produto, quantidade = 1) {
+  function addItem(produto: Produto, quantidade = 1, geracao?: CartItem['geracao']) {
+    const chave = chaveDoItem({ produto, geracao });
     setItems((prev) => {
-      const existente = prev.find((item) => item.produto.id === produto.id);
+      const existente = prev.find((item) => chaveDoItem(item) === chave);
       if (existente) {
         return prev.map((item) =>
-          item.produto.id === produto.id ? { ...item, quantidade: item.quantidade + quantidade } : item,
+          chaveDoItem(item) === chave ? { ...item, quantidade: item.quantidade + quantidade } : item,
         );
       }
-      return [...prev, { produto, quantidade }];
+      return [...prev, { produto, quantidade, geracao }];
     });
   }
 
-  function removeItem(produtoId: string) {
-    setItems((prev) => prev.filter((item) => item.produto.id !== produtoId));
+  function removeItem(chave: string) {
+    setItems((prev) => prev.filter((item) => chaveDoItem(item) !== chave));
   }
 
-  function updateQuantidade(produtoId: string, quantidade: number) {
+  function updateQuantidade(chave: string, quantidade: number) {
     if (quantidade <= 0) {
-      removeItem(produtoId);
+      removeItem(chave);
       return;
     }
-    setItems((prev) => prev.map((item) => (item.produto.id === produtoId ? { ...item, quantidade } : item)));
+    setItems((prev) => prev.map((item) => (chaveDoItem(item) === chave ? { ...item, quantidade } : item)));
   }
 
   function clear() {
