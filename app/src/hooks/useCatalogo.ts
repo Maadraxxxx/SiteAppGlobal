@@ -15,6 +15,14 @@ export function useCreateCategoria() {
   });
 }
 
+export function useRemoveCategoria() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => categoriasApi.remove(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['categorias'] }),
+  });
+}
+
 function makeTagHooks(api: typeof formatosApi, key: string) {
   function useList() {
     return useQuery({ queryKey: [key], queryFn: () => api.list() });

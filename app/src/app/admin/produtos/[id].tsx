@@ -9,7 +9,13 @@ import { TagSelector } from '@/components/TagSelector';
 import { TextField } from '@/components/TextField';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-import { estilosHooks, formatosHooks, useCategorias, useCreateCategoria } from '@/hooks/useCatalogo';
+import {
+  estilosHooks,
+  formatosHooks,
+  useCategorias,
+  useCreateCategoria,
+  useRemoveCategoria,
+} from '@/hooks/useCatalogo';
 import { useAdminProduto, useCreateProduto, useUpdateProduto } from '@/hooks/useProdutos';
 
 export default function AdminProdutoFormScreen() {
@@ -23,6 +29,9 @@ export default function AdminProdutoFormScreen() {
   const createCategoria = useCreateCategoria();
   const createFormato = formatosHooks.useCreate();
   const createEstilo = estilosHooks.useCreate();
+  const removeCategoria = useRemoveCategoria();
+  const removeFormato = formatosHooks.useRemove();
+  const removeEstilo = estilosHooks.useRemove();
   const createMutation = useCreateProduto();
   const updateMutation = useUpdateProduto();
 
@@ -143,6 +152,7 @@ export default function AdminProdutoFormScreen() {
             return { item: categoria };
           }}
           creating={createCategoria.isPending}
+          onRemove={(id) => removeCategoria.mutateAsync(id)}
         />
 
         <TagSelector
@@ -152,6 +162,7 @@ export default function AdminProdutoFormScreen() {
           onSelect={setFormatoId}
           onCreate={(nome) => createFormato.mutateAsync(nome)}
           creating={createFormato.isPending}
+          onRemove={(id) => removeFormato.mutateAsync(id)}
         />
 
         <TagSelector
@@ -161,6 +172,7 @@ export default function AdminProdutoFormScreen() {
           onSelect={setEstiloId}
           onCreate={(nome) => createEstilo.mutateAsync(nome)}
           creating={createEstilo.isPending}
+          onRemove={(id) => removeEstilo.mutateAsync(id)}
         />
       </FormSection>
 
