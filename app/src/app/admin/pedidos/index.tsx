@@ -26,29 +26,6 @@ import { useTheme } from '@/hooks/use-theme';
 const PAGAMENTOS: StatusPagamentoPedido[] = ['AGUARDANDO', 'PAGO', 'CANCELADO'];
 const PRODUCOES: StatusProducao[] = ['AGUARDANDO', 'EM_PRODUCAO', 'ENVIADO', 'ENTREGUE'];
 
-/** Um filtro aponta pra um eixo só — nunca cruza pagamento com produção. */
-type FiltroStatus =
-  | { eixo: 'pagamento'; valor: StatusPagamentoPedido }
-  | { eixo: 'producao'; valor: StatusProducao };
-
-/**
- * Uma lista só, com os status dos dois eixos enfileirados. Escolher um troca o
- * anterior: o admin filtra por "Pago" OU por "Em produção", nunca pelos dois
- * ao mesmo tempo.
- */
-const FILTROS: { chave: string; rotulo: string; filtro: FiltroStatus }[] = [
-  ...PAGAMENTOS.map((valor) => ({
-    chave: `pagamento-${valor}`,
-    rotulo: ROTULO_PAGAMENTO[valor],
-    filtro: { eixo: 'pagamento' as const, valor },
-  })),
-  ...PRODUCOES.map((valor) => ({
-    chave: `producao-${valor}`,
-    rotulo: ROTULO_PRODUCAO[valor],
-    filtro: { eixo: 'producao' as const, valor },
-  })),
-];
-
 /** Busca sem acento: "producao" acha "produção", "helloween" acha "Helloween". */
 function normalizar(texto: string) {
   return texto
@@ -114,6 +91,45 @@ function Chip({ texto, ativo, onPress }: { texto: string; ativo: boolean; onPres
   );
 }
 
+/**
+ * Um eixo por linha, cada um com a própria escolha. Os dois se somam: dá pra
+ * pedir "Pago" e "Na fila" ao mesmo tempo, que é a fila de produção do dia.
+ */
+function LinhaDeFiltro<T extends string>({
+  titulo,
+  opcoes,
+  rotulo,
+  selecionado,
+  onSelecionar,
+}: {
+  titulo: string;
+  opcoes: T[];
+  rotulo: Record<T, string>;
+  selecionado: T | null;
+  onSelecionar: (valor: T | null) => void;
+}) {
+  return (
+    <View style={styles.filtroLinha}>
+      <ThemedText type="small" themeColor="textSecondary">
+        {titulo}
+      </ThemedText>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        <Chip texto="Todos" ativo={selecionado === null} onPress={() => onSelecionar(null)} />
+        {opcoes.map((opcao) => (
+          <Chip
+            key={opcao}
+            texto={rotulo[opcao]}
+            ativo={selecionado === opcao}
+            // Tocar de novo no que já está ativo desliga só esse eixo — o outro
+            // continua onde estava.
+            onPress={() => onSelecionar(selecionado === opcao ? null : opcao)}
+          />
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
 export default function AdminPedidosScreen() {
   const { data, isLoading, refetch: recarregar } = useAdminPedidos();
   const atualizar = useAtualizarStatusPedido();
@@ -123,26 +139,22 @@ export default function AdminPedidosScreen() {
   const [gerandoEtiqueta, setGerandoEtiqueta] = useState(false);
   const [salvandoRastreio, setSalvandoRastreio] = useState(false);
   const [termo, setTermo] = useState('');
-  const [chaveFiltro, setChaveFiltro] = useState<string | null>(null);
+  const [filtroPagamento, setFiltroPagamento] = useState<StatusPagamentoPedido | null>(null);
+  const [filtroProducao, setFiltroProducao] = useState<StatusProducao | null>(null);
   const theme = useTheme();
   const mostrarBarra = useMostrarBarraDeRolagem();
 
   const todos = data?.items ?? [];
-  const filtro = FILTROS.find((f) => f.chave === chaveFiltro)?.filtro ?? null;
   const busca = normalizar(termo.trim());
 
   const pedidos = useMemo(
     () =>
       todos.filter((p) => {
-        // O status escolhido vale pro eixo dele e só — o outro eixo não entra
-        // na conta, pra "Pago" não esconder o que está em produção.
-        if (filtro) {
-          const bate =
-            filtro.eixo === 'pagamento'
-              ? p.statusPagamento === filtro.valor
-              : p.statusProducao === filtro.valor;
-          if (!bate) return false;
-        }
+        // Cada eixo filtra por conta própria, e os dois se somam: escolher
+        // "Pago" e "Na fila" junto dá exatamente o que está pago esperando
+        // entrar na produção.
+        if (filtroPagamento && p.statusPagamento !== filtroPagamento) return false;
+        if (filtroProducao && p.statusProducao !== filtroProducao) return false;
 
         if (!busca) return true;
         const campos = [
@@ -155,10 +167,10 @@ export default function AdminPedidosScreen() {
         ];
         return campos.some((campo) => normalizar(campo).includes(busca));
       }),
-    [todos, filtro, busca],
+    [todos, filtroPagamento, filtroProducao, busca],
   );
 
-  const filtrando = chaveFiltro !== null || busca.length > 0;
+  const filtrando = filtroPagamento !== null || filtroProducao !== null || busca.length > 0;
 
   async function handleGerarEtiqueta() {
     if (!aberto) return;
@@ -222,19 +234,20 @@ export default function AdminPedidosScreen() {
         <View style={[styles.filtros, { borderColor: theme.border }]}>
           <Busca valor={termo} onChange={setTermo} />
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-            <Chip texto="Todos" ativo={chaveFiltro === null} onPress={() => setChaveFiltro(null)} />
-            {FILTROS.map((opcao) => (
-              <Chip
-                key={opcao.chave}
-                texto={opcao.rotulo}
-                ativo={chaveFiltro === opcao.chave}
-                // Tocar de novo no que já está ativo desliga o filtro — é o que
-                // a mão espera, e evita ter que voltar no "Todos".
-                onPress={() => setChaveFiltro(chaveFiltro === opcao.chave ? null : opcao.chave)}
-              />
-            ))}
-          </ScrollView>
+          <LinhaDeFiltro
+            titulo="Pagamento"
+            opcoes={PAGAMENTOS}
+            rotulo={ROTULO_PAGAMENTO}
+            selecionado={filtroPagamento}
+            onSelecionar={setFiltroPagamento}
+          />
+          <LinhaDeFiltro
+            titulo="Produção e entrega"
+            opcoes={PRODUCOES}
+            rotulo={ROTULO_PRODUCAO}
+            selecionado={filtroProducao}
+            onSelecionar={setFiltroProducao}
+          />
 
           {filtrando ? (
             <View style={styles.resultado}>
@@ -243,7 +256,8 @@ export default function AdminPedidosScreen() {
               </ThemedText>
               <Pressable
                 onPress={() => {
-                  setChaveFiltro(null);
+                  setFiltroPagamento(null);
+                  setFiltroProducao(null);
                   setTermo('');
                 }}
                 hitSlop={8}>
@@ -595,6 +609,9 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.three,
     marginBottom: Spacing.one,
     borderBottomWidth: 1,
+  },
+  filtroLinha: {
+    gap: Spacing.one,
   },
   busca: {
     flexDirection: 'row',
