@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Children, Fragment, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { BotaoVoltar } from '@/components/BotaoVoltar';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
@@ -109,7 +110,10 @@ export default function PerfilScreen() {
   if (!usuario) {
     return (
       <Screen maxWidth={640} style={styles.screen}>
-        <ThemedText type="subtitle">Perfil</ThemedText>
+        <View style={styles.tituloLinha}>
+          <BotaoVoltar />
+          <ThemedText type="subtitle">Perfil</ThemedText>
+        </View>
 
         <View style={styles.deslogado}>
           <View style={[styles.avatarVazio, { backgroundColor: theme.backgroundElement }]}>
@@ -134,7 +138,10 @@ export default function PerfilScreen() {
 
   return (
     <Screen maxWidth={640} style={styles.screen}>
-      <ThemedText type="subtitle">Perfil</ThemedText>
+      <View style={styles.tituloLinha}>
+        <BotaoVoltar />
+        <ThemedText type="subtitle">Perfil</ThemedText>
+      </View>
 
       <View style={[styles.identidade, { backgroundColor: theme.backgroundElement }]}>
         <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
@@ -210,6 +217,10 @@ export default function PerfilScreen() {
 const styles = StyleSheet.create({
   screen: {
     gap: Spacing.four,
+  },
+  tituloLinha: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   identidade: {
     flexDirection: 'row',

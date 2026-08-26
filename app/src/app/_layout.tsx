@@ -12,6 +12,7 @@ import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
+import { BotaoVoltar } from '@/components/BotaoVoltar';
 import { IntroVideo } from '@/components/IntroVideo';
 import { Colors } from '@/constants/theme';
 import { AuthProvider } from '@/context/AuthContext';
@@ -60,7 +61,16 @@ export default function RootLayout() {
               ...DefaultTheme,
               colors: { ...DefaultTheme.colors, primary: Colors.light.primary, background: Colors.light.background },
             }}>
-            <Stack screenOptions={{ headerShown: false }}>
+            {/* headerLeft aqui em cima vale pra todas as telas com cabeçalho: a
+                seta nativa some quando não há histórico (link aberto direto,
+                página recarregada no navegador) e deixava o cliente sem saída.
+                O tintColor vem do próprio cabeçalho, então a seta continua
+                branca sobre o banner do produto. */}
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                headerLeft: ({ tintColor }) => <BotaoVoltar cor={tintColor} />,
+              }}>
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="(auth)/login" options={{ headerShown: true, title: 'Entrar' }} />
               <Stack.Screen name="(auth)/register" options={{ headerShown: true, title: 'Criar conta' }} />

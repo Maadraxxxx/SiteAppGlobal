@@ -16,6 +16,7 @@ import { Button } from '@/components/Button';
 import { CartButton } from '@/components/CartButton';
 import { Chip } from '@/components/Chip';
 import { ProductCard } from '@/components/ProductCard';
+import { BotaoVoltar } from '@/components/BotaoVoltar';
 import { Screen, useMostrarBarraDeRolagem } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
@@ -154,7 +155,12 @@ export default function CatalogoScreen() {
   return (
     <Screen scroll={false} maxWidth={1600} style={styles.screen}>
       <View style={styles.headerRow}>
-        <ThemedText type="subtitle">Catálogo</ThemedText>
+        {/* Ao lado do título, e não num cabeçalho nativo: a tela já tem o
+            título aqui, e a barra nativa só repetiria a palavra. */}
+        <View style={styles.headerTitulo}>
+          <BotaoVoltar />
+          <ThemedText type="subtitle">Catálogo</ThemedText>
+        </View>
         <CartButton />
       </View>
 
@@ -316,6 +322,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  headerTitulo: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   searchRow: {
     flexDirection: 'row',
