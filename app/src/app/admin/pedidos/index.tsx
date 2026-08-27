@@ -5,7 +5,6 @@ import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -22,6 +21,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useAdminPedidos, useAtualizarStatusPedido } from '@/hooks/usePedidos';
 import { useTheme } from '@/hooks/use-theme';
+import { abrirEmNovaAba, baixarArquivo } from '@/lib/baixar';
 
 const PAGAMENTOS: StatusPagamentoPedido[] = ['AGUARDANDO', 'PAGO', 'CANCELADO'];
 const PRODUCOES: StatusProducao[] = ['AGUARDANDO', 'EM_PRODUCAO', 'ENVIADO', 'ENTREGUE'];
@@ -451,7 +451,7 @@ export default function AdminPedidosScreen() {
                     return (
                       <Pressable
                         key={item.id}
-                        onPress={() => Linking.openURL(urlDeDownload(arte, nome))}
+                        onPress={() => baixarArquivo(urlDeDownload(arte, nome), nome)}
                         style={({ pressed }) => [
                           styles.acaoLinha,
                           { borderColor: theme.border, opacity: pressed ? 0.6 : 1 },
@@ -478,7 +478,7 @@ export default function AdminPedidosScreen() {
 
                   {aberto.urlEtiqueta ? (
                     <Pressable
-                      onPress={() => Linking.openURL(aberto.urlEtiqueta as string)}
+                      onPress={() => abrirEmNovaAba(aberto.urlEtiqueta as string)}
                       style={({ pressed }) => [
                         styles.acaoLinha,
                         { borderColor: theme.border, opacity: pressed ? 0.6 : 1 },
