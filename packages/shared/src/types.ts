@@ -81,6 +81,34 @@ export interface ResumoPedidosMes {
   arrecadado: string;
 }
 
+/** Dinheiro num recorte de tempo. `receita` é string pelo mesmo motivo acima. */
+export interface TotalDoPeriodo {
+  pedidos: number;
+  receita: string;
+}
+
+/**
+ * Painel financeiro do admin. Tudo aqui conta só pedido com pagamento PAGO —
+ * é dinheiro que entrou. As duas exceções estão no nome: `aReceber` e
+ * `cancelados`.
+ */
+export interface PainelFinanceiro {
+  hoje: TotalDoPeriodo;
+  semana: TotalDoPeriodo;
+  mes: TotalDoPeriodo;
+  ano: TotalDoPeriodo;
+  aReceber: { pedidos: number; valor: string };
+  cancelados: { pedidos: number; valor: string };
+  /** Receita do ano dividida pelos pedidos do ano. */
+  ticketMedio: string;
+  /** Quanto do faturamento é produto e quanto é frete — o frete entra e sai. */
+  composicao: { produtos: string; frete: string };
+  /** Últimos 12 meses, com os vazios preenchidos pra linha do tempo não pular. */
+  porMes: { mes: string; pedidos: number; receita: string }[];
+  topProdutos: { nome: string; quantidade: number; receita: string }[];
+  porMetodo: { metodo: string; pedidos: number; valor: string }[];
+}
+
 /**
  * O pedido tem dois status ao mesmo tempo, e eles andam sozinhos: o do dinheiro
  * (quem mexe é o retorno do Mercado Pago) e o da bancada (quem mexe é o admin).

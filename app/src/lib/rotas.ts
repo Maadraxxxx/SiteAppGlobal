@@ -13,6 +13,7 @@ export const ROTAS = {
   checkout: '/checkout' as Href,
   enderecos: '/enderecos' as Href,
   adminPedidos: '/admin/pedidos' as Href,
+  adminFinanceiro: '/admin/financeiro' as Href,
   adminCarrossel: '/admin/banners' as Href,
   rastreio: (pedidoId: string) => `/rastreio/${pedidoId}` as Href,
   pagamento: (pedidoId: string) => `/pagamento/${pedidoId}` as Href,

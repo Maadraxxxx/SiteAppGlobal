@@ -69,6 +69,11 @@ export default async function pedidosRoutes(app: FastifyInstance) {
         return reply.send({ resumo });
       });
 
+      adminScope.get('/financeiro', async (_request, reply) => {
+        const painel = await pedidosService.painelFinanceiro();
+        return reply.send({ painel });
+      });
+
       adminScope.get('/', async (_request, reply) => {
         const itens = await pedidosService.listarPedidosAdmin();
         return reply.send({ items: itens });

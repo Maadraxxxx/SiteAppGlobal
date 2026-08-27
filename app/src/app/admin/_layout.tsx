@@ -27,6 +27,7 @@ export default function AdminLayout() {
         headerLeft: ({ tintColor }) => <BotaoVoltar cor={tintColor} />,
       }}>
       <Stack.Screen name="index" options={{ title: 'Painel Admin' }} />
+      <Stack.Screen name="financeiro" options={{ title: 'Financeiro' }} />
       <Stack.Screen name="pedidos/index" options={{ title: 'Pedidos' }} />
       <Stack.Screen name="produtos/index" options={{ title: 'Produtos' }} />
       <Stack.Screen name="produtos/[id]" options={{ title: 'Produto' }} />

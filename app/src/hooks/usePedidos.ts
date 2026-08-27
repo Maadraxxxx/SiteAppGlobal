@@ -10,6 +10,10 @@ export function useResumoPedidosMes() {
   return useQuery({ queryKey: ['resumo-pedidos-mes'], queryFn: () => pedidosApi.resumoMes() });
 }
 
+export function usePainelFinanceiro() {
+  return useQuery({ queryKey: ['painel-financeiro'], queryFn: () => pedidosApi.financeiro() });
+}
+
 export function useMeusPedidos() {
   return useQuery({ queryKey: ['meus-pedidos'], queryFn: () => pedidosApi.listarMeus() });
 }

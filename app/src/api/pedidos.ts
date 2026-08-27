@@ -1,6 +1,7 @@
 import type {
   Pagamento,
   Pedido,
+  PainelFinanceiro,
   ResumoPedidosMes,
   StatusPagamentoPedido,
   StatusProducao,
@@ -39,6 +40,8 @@ export const pedidosApi = {
     apiRequest<{ pagamento: Pagamento }>(`/pedidos/${pedidoId}/pagamento`),
 
   resumoMes: () => apiRequest<{ resumo: ResumoPedidosMes }>('/admin/pedidos/resumo-mes'),
+
+  financeiro: () => apiRequest<{ painel: PainelFinanceiro }>('/admin/pedidos/financeiro'),
 
   adminList: () => apiRequest<{ items: Pedido[] }>('/admin/pedidos'),
 

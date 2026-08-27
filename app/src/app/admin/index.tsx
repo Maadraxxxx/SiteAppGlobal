@@ -117,19 +117,28 @@ export default function AdminDashboard() {
       <View style={styles.grupo}>
         <SectionTitle titulo={`Resumo de ${nomeDoMes()}`} />
 
-        {/* Arrecadado ganha a linha inteira: e o numero que mais importa e
-            "R$ 12.345,67" nao caberia num cartao de um terco da tela. */}
-        <View style={[styles.destaque, { backgroundColor: theme.backgroundElement }]}>
-          <View style={styles.destaqueTopo}>
-            <Ionicons name="cash-outline" size={18} color={theme.primary} />
-            <ThemedText type="small" themeColor="textSecondary">
-              Arrecadado no mês
+        {/* Um número solto dizia pouco: quanto entrou hoje, o ticket médio, o
+            que está por receber — nada disso cabia aqui. Virou porta pro painel
+            financeiro, que mostra tudo isso junto. */}
+        <Pressable
+          onPress={() => router.push(ROTAS.adminFinanceiro)}
+          style={({ pressed }) => [
+            styles.destaque,
+            { backgroundColor: theme.primary, opacity: pressed ? 0.85 : 1 },
+          ]}>
+          <View style={styles.destaqueTexto}>
+            <View style={styles.destaqueTopo}>
+              <Ionicons name="stats-chart" size={18} color={theme.primaryText} />
+              <ThemedText type="smallBold" themeColor="primaryText">
+                Painel financeiro
+              </ThemedText>
+            </View>
+            <ThemedText type="small" themeColor="primaryText" style={styles.destaqueNota}>
+              Receita, ticket médio, mais vendidos e o que está por receber
             </ThemedText>
           </View>
-          <ThemedText type="subtitle" style={styles.destaqueValor} numberOfLines={1} adjustsFontSizeToFit>
-            {moeda(resumo?.arrecadado ?? 0)}
-          </ThemedText>
-        </View>
+          <Ionicons name="chevron-forward" size={20} color={theme.primaryText} />
+        </Pressable>
 
         <View style={styles.stats}>
           <StatCard
@@ -237,18 +246,23 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   destaque: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
     padding: Spacing.three,
     borderRadius: Radius.medium,
-    gap: Spacing.one,
+  },
+  destaqueTexto: {
+    flex: 1,
+    gap: Spacing.half,
   },
   destaqueTopo: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
   },
-  destaqueValor: {
-    fontSize: 32,
-    lineHeight: 40,
+  destaqueNota: {
+    opacity: 0.9,
   },
   stats: {
     flexDirection: 'row',

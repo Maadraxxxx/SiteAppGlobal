@@ -186,3 +186,149 @@ export async function atualizarStatus(
 
   return prisma.pedido.update({ where: { id }, data, include: INCLUDE_PEDIDO });
 }
+
+// ---------------------------------------------------------------------------
+// Painel financeiro
+// ---------------------------------------------------------------------------
+
+/** Quantos meses de historico o grafico mostra. */
+const MESES_NO_HISTORICO = 12;
+/** Quantos produtos entram no ranking de mais vendidos. */
+const TOP_PRODUTOS = 5;
+
+function inicioDoDia() {
+  const a = new Date();
+  return new Date(a.getFullYear(), a.getMonth(), a.getDate());
+}
+
+function inicioDoAno() {
+  return new Date(new Date().getFullYear(), 0, 1);
+}
+
+/** Primeiro dia do mes, N meses atras. */
+function inicioDeMesesAtras(meses: number) {
+  const a = new Date();
+  return new Date(a.getFullYear(), a.getMonth() - meses, 1);
+}
+
+/** "2026-08" — chave estavel pra agrupar, sem depender de fuso na string. */
+function chaveDoMes(data: Date) {
+  return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}`;
+}
+
+async function totalNoPeriodo(desde: Date) {
+  const [pedidos, soma] = await Promise.all([
+    prisma.pedido.count({ where: { createdAt: { gte: desde }, ...PAGO } }),
+    prisma.pedido.aggregate({ _sum: { total: true }, where: { createdAt: { gte: desde }, ...PAGO } }),
+  ]);
+  return { pedidos, receita: (soma._sum.total ?? 0).toString() };
+}
+
+/**
+ * Tudo daqui olha so pedido com pagamento PAGO — e dinheiro que entrou. As
+ * duas excecoes estao nomeadas: `aReceber` (ainda aguardando) e `cancelados`.
+ *
+ * A loja tem poucos pedidos, entao os agrupamentos que o Prisma nao faz num
+ * aggregate (receita por mes, ranking de produtos) sao somados aqui mesmo, em
+ * memoria. Se um dia o volume crescer, viram consulta agregada no banco.
+ */
+export async function painelFinanceiro() {
+  const desdeHistorico = inicioDeMesesAtras(MESES_NO_HISTORICO - 1);
+
+  const [hoje, semana, mes, ano, aReceberAgg, canceladosAgg, composicaoAgg, doHistorico, itensVendidos, porMetodoAgg] =
+    await Promise.all([
+      totalNoPeriodo(inicioDoDia()),
+      totalNoPeriodo(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)),
+      totalNoPeriodo(inicioDoMes()),
+      totalNoPeriodo(inicioDoAno()),
+
+      prisma.pedido.aggregate({
+        _sum: { total: true },
+        _count: true,
+        where: { statusPagamento: StatusPagamentoPedido.AGUARDANDO },
+      }),
+      prisma.pedido.aggregate({
+        _sum: { total: true },
+        _count: true,
+        where: { statusPagamento: StatusPagamentoPedido.CANCELADO },
+      }),
+      // Quanto do faturamento e produto e quanto e frete — o frete entra e sai,
+      // entao misturar os dois esconde a margem real. A parte de produto sai de
+      // `total - frete`, e nao do `subtotal`: pedido feito antes da coluna
+      // subtotal existir ficou com 0 ali, e a conta daria zero pra tudo.
+      prisma.pedido.aggregate({ _sum: { total: true, freteValor: true }, where: PAGO }),
+
+      prisma.pedido.findMany({
+        where: { createdAt: { gte: desdeHistorico }, ...PAGO },
+        select: { createdAt: true, total: true },
+      }),
+      prisma.itemPedido.findMany({
+        where: { pedido: PAGO },
+        select: { quantidade: true, precoUnitario: true, produto: { select: { id: true, nome: true } } },
+      }),
+      prisma.pagamento.groupBy({
+        by: ['metodo'],
+        _sum: { valor: true },
+        _count: true,
+        where: { status: 'APROVADO' },
+      }),
+    ]);
+
+  // Receita por mes, com os meses vazios preenchidos: sem isso o grafico
+  // pularia de marco pra maio como se maio viesse logo depois.
+  const acumulado = new Map<string, { pedidos: number; receita: number }>();
+  for (let i = MESES_NO_HISTORICO - 1; i >= 0; i--) {
+    acumulado.set(chaveDoMes(inicioDeMesesAtras(i)), { pedidos: 0, receita: 0 });
+  }
+  for (const pedido of doHistorico) {
+    const linha = acumulado.get(chaveDoMes(pedido.createdAt));
+    if (!linha) continue;
+    linha.pedidos += 1;
+    linha.receita += Number(pedido.total);
+  }
+  const porMes = [...acumulado.entries()].map(([mes, v]) => ({
+    mes,
+    pedidos: v.pedidos,
+    receita: v.receita.toFixed(2),
+  }));
+
+  // Ranking de produtos. O groupBy do Prisma nao multiplica preco x quantidade,
+  // entao a soma sai daqui.
+  const porProduto = new Map<string, { nome: string; quantidade: number; receita: number }>();
+  for (const item of itensVendidos) {
+    if (!item.produto) continue;
+    const atual = porProduto.get(item.produto.id) ?? { nome: item.produto.nome, quantidade: 0, receita: 0 };
+    atual.quantidade += item.quantidade;
+    atual.receita += Number(item.precoUnitario) * item.quantidade;
+    porProduto.set(item.produto.id, atual);
+  }
+  const topProdutos = [...porProduto.values()]
+    .sort((a, b) => b.receita - a.receita)
+    .slice(0, TOP_PRODUTOS)
+    .map((p) => ({ nome: p.nome, quantidade: p.quantidade, receita: p.receita.toFixed(2) }));
+
+  const receitaDoAno = Number(ano.receita);
+  const ticketMedio = ano.pedidos > 0 ? (receitaDoAno / ano.pedidos).toFixed(2) : '0.00';
+  const freteTotal = Number(composicaoAgg._sum.freteValor ?? 0);
+
+  return {
+    hoje,
+    semana,
+    mes,
+    ano,
+    aReceber: { pedidos: aReceberAgg._count, valor: (aReceberAgg._sum.total ?? 0).toString() },
+    cancelados: { pedidos: canceladosAgg._count, valor: (canceladosAgg._sum.total ?? 0).toString() },
+    ticketMedio,
+    composicao: {
+      produtos: (Number(composicaoAgg._sum.total ?? 0) - freteTotal).toFixed(2),
+      frete: freteTotal.toFixed(2),
+    },
+    porMes,
+    topProdutos,
+    porMetodo: porMetodoAgg.map((m) => ({
+      metodo: m.metodo,
+      pedidos: m._count,
+      valor: (m._sum.valor ?? 0).toString(),
+    })),
+  };
+}
