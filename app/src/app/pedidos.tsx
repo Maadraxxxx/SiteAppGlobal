@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useMeusPedidos } from '@/hooks/usePedidos';
+import { usePrazo } from '@/lib/prazo';
 import { ROTAS } from '@/lib/rotas';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -19,6 +20,30 @@ function moeda(valor: string | number) {
 
 function data(iso: string) {
   return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+/**
+ * Quanto tempo ainda dá pra pagar. O pedido é cancelado sozinho quando o prazo
+ * acaba, então esconder essa conta seria deixar o cliente perder a compra sem
+ * saber que havia relógio correndo.
+ */
+function PrazoDePagamento({ expiraEm }: { expiraEm?: string | null }) {
+  const theme = useTheme();
+  const prazo = usePrazo(expiraEm);
+  const cor = prazo?.urgente ? theme.danger : theme.primary;
+
+  return (
+    <View style={[styles.chamada, { borderColor: prazo?.urgente ? theme.danger : theme.border }]}>
+      <Ionicons name={prazo?.urgente ? 'alarm-outline' : 'qr-code-outline'} size={16} color={cor} />
+      <ThemedText type="small" style={{ color: cor }}>
+        {!prazo
+          ? 'Finalizar pagamento'
+          : prazo.vencido
+            ? 'Prazo de pagamento encerrado'
+            : `Finalizar pagamento · faltam ${prazo.texto}`}
+      </ThemedText>
+    </View>
+  );
 }
 
 export default function PedidosScreen() {
@@ -115,12 +140,7 @@ export default function PedidosScreen() {
               </View>
 
               {aguardando ? (
-                <View style={[styles.chamada, { borderColor: theme.border }]}>
-                  <Ionicons name="qr-code-outline" size={16} color={theme.primary} />
-                  <ThemedText type="small" themeColor="primary">
-                    Finalizar pagamento
-                  </ThemedText>
-                </View>
+                <PrazoDePagamento expiraEm={item.expiraEm} />
               ) : podeRastrear ? (
                 <View style={[styles.chamada, { borderColor: theme.border }]}>
                   <Ionicons name="cube-outline" size={16} color={theme.primary} />

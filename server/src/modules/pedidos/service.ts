@@ -1,4 +1,5 @@
 import { Prisma, StatusPagamentoPedido, StatusProducao } from '@prisma/client';
+import { env } from '../../config/env';
 import { prisma } from '../../db/prisma';
 import { badRequest, notFound } from '../../lib/http-error';
 import { get as getEndereco } from '../enderecos/service';
@@ -13,6 +14,21 @@ const INCLUDE_PEDIDO = {
   pagamentos: { orderBy: { createdAt: 'desc' } },
   usuario: { select: { id: true, nome: true, email: true } },
 } satisfies Prisma.PedidoInclude;
+
+/**
+ * Ate quando o cliente ainda pode pagar. Sai calculado daqui, e nao fixo no
+ * app, porque o prazo mora no env — se ele mudar, o app tem que acompanhar
+ * sozinho. Nulo quando o pedido nao esta mais aguardando pagamento.
+ */
+function comPrazo<T extends { statusPagamento: StatusPagamentoPedido; createdAt: Date }>(pedido: T) {
+  return {
+    ...pedido,
+    expiraEm:
+      pedido.statusPagamento === StatusPagamentoPedido.AGUARDANDO
+        ? new Date(pedido.createdAt.getTime() + env.PEDIDO_CANCELA_HORAS * 60 * 60 * 1000).toISOString()
+        : null,
+  };
+}
 
 /** Primeiro instante do mes corrente, no fuso do servidor. */
 function inicioDoMes() {
@@ -141,22 +157,91 @@ export async function criarPedido(usuarioId: string, itens: ItemEntrada[], frete
     };
   }
 
-  return prisma.pedido.create({
+  const criado = await prisma.pedido.create({
     data: { usuarioId, subtotal, total, ...dadosFrete, itens: { create: linhas } },
     include: INCLUDE_PEDIDO,
   });
+  return comPrazo(criado);
 }
 
-export function listarMeusPedidos(usuarioId: string) {
-  return prisma.pedido.findMany({
+/**
+ * Pedido sem pagamento morre em dois tempos.
+ *
+ * 1. Passadas 24h aguardando, vira CANCELADO. Sai da fila do admin e da conta
+ *    de "a receber", mas continua no lugar: se o cliente reclamar, o pedido
+ *    esta la e da pra voltar atras.
+ * 2. Passados 7 dias, e apagado de vez — pedido, itens e tentativas de
+ *    pagamento.
+ *
+ * O passo 2 nao tem volta, entao a condicao e estreita de proposito: so
+ * cancelado, so quem passou do prazo, e so quem nunca teve pagamento aprovado.
+ * Esse ultimo filtro protege o pedido que foi pago e depois cancelado (um
+ * estorno, por exemplo) — esse fica.
+ *
+ * A imagem gerada pela IA NAO some junto: o item so aponta pra ela, e ela e do
+ * cliente, nao do pedido.
+ *
+ * Roda na leitura da lista em vez de num agendador porque o servidor vive em
+ * ambiente sem processo continuo — um setInterval nao sobreviveria ali. Rodar
+ * duas vezes ao mesmo tempo nao e problema: a segunda nao acha mais nada.
+ */
+export async function limparPedidosNaoPagos() {
+  const agora = Date.now();
+  const limiteCancelar = new Date(agora - env.PEDIDO_CANCELA_HORAS * 60 * 60 * 1000);
+  const limiteApagar = new Date(agora - env.PEDIDO_APAGA_DIAS * 24 * 60 * 60 * 1000);
+
+  const cancelados = await prisma.pedido.updateMany({
+    where: { statusPagamento: StatusPagamentoPedido.AGUARDANDO, createdAt: { lt: limiteCancelar } },
+    data: { statusPagamento: StatusPagamentoPedido.CANCELADO },
+  });
+
+  const vencidos = await prisma.pedido.findMany({
+    where: {
+      statusPagamento: StatusPagamentoPedido.CANCELADO,
+      createdAt: { lt: limiteApagar },
+      // Nunca chegou a ser pago: se houve aprovacao, o pedido fica pro
+      // historico, mesmo cancelado depois.
+      pagamentos: { none: { status: 'APROVADO' } },
+    },
+    select: { id: true },
+  });
+
+  let apagados = 0;
+  if (vencidos.length) {
+    const ids = vencidos.map((p) => p.id);
+    // Os filhos primeiro: as relacoes nao tem cascata, entao apagar o pedido
+    // direto seria recusado pelo banco. Numa transacao pra nunca existir um
+    // instante com item apontando pra pedido que ja sumiu.
+    await prisma.$transaction([
+      prisma.pagamento.deleteMany({ where: { pedidoId: { in: ids } } }),
+      prisma.itemPedido.deleteMany({ where: { pedidoId: { in: ids } } }),
+      prisma.pedido.deleteMany({ where: { id: { in: ids } } }),
+    ]);
+    apagados = ids.length;
+  }
+
+  if (cancelados.count || apagados) {
+    console.warn(
+      `[pedidos] limpeza automatica: ${cancelados.count} cancelado(s) por ${env.PEDIDO_CANCELA_HORAS}h sem pagamento, ${apagados} apagado(s) por ${env.PEDIDO_APAGA_DIAS} dias`,
+    );
+  }
+  return { cancelados: cancelados.count, apagados };
+}
+
+export async function listarMeusPedidos(usuarioId: string) {
+  await limparPedidosNaoPagos();
+  const pedidos = await prisma.pedido.findMany({
     where: { usuarioId },
     orderBy: { createdAt: 'desc' },
     include: INCLUDE_PEDIDO,
   });
+  return pedidos.map(comPrazo);
 }
 
-export function listarPedidosAdmin() {
-  return prisma.pedido.findMany({ orderBy: { createdAt: 'desc' }, include: INCLUDE_PEDIDO });
+export async function listarPedidosAdmin() {
+  await limparPedidosNaoPagos();
+  const pedidos = await prisma.pedido.findMany({ orderBy: { createdAt: 'desc' }, include: INCLUDE_PEDIDO });
+  return pedidos.map(comPrazo);
 }
 
 export async function getPedido(id: string, opcoes?: { usuarioId?: string }) {
@@ -166,7 +251,7 @@ export async function getPedido(id: string, opcoes?: { usuarioId?: string }) {
   if (opcoes?.usuarioId && pedido.usuarioId !== opcoes.usuarioId) {
     throw notFound('Pedido nao encontrado');
   }
-  return pedido;
+  return comPrazo(pedido);
 }
 
 /**
@@ -184,7 +269,8 @@ export async function atualizarStatus(
   if (mudanca.statusProducao) data.statusProducao = mudanca.statusProducao;
   if (!Object.keys(data).length) throw badRequest('Informe o status de pagamento ou o de producao');
 
-  return prisma.pedido.update({ where: { id }, data, include: INCLUDE_PEDIDO });
+  const atualizado = await prisma.pedido.update({ where: { id }, data, include: INCLUDE_PEDIDO });
+  return comPrazo(atualizado);
 }
 
 // ---------------------------------------------------------------------------

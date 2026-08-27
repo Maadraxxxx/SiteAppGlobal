@@ -63,6 +63,14 @@ const envSchema = z.object({
   // uma depois disso. Ficam aqui pra dar pra ajustar sem mexer no código.
   IA_GRATIS_POR_DIA: z.coerce.number().int().min(0).default(2),
   IA_PRECO_GERACAO: z.coerce.number().positive().default(1),
+
+  /**
+   * Pedido sem pagamento morre em dois tempos: primeiro é cancelado, e só
+   * bem depois apagado de vez. Ficam aqui pra dar pra afrouxar os prazos sem
+   * mexer no código — o que importa numa exclusão que não tem volta.
+   */
+  PEDIDO_CANCELA_HORAS: z.coerce.number().int().positive().default(24),
+  PEDIDO_APAGA_DIAS: z.coerce.number().int().positive().default(7),
 });
 
 const parsed = envSchema.safeParse(process.env);

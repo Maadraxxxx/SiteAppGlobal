@@ -189,6 +189,11 @@ export interface Pedido {
   codigoRastreio: string | null;
   urlEtiqueta: string | null;
   melhorEnvioEnvioId: string | null;
+  /**
+   * Até quando o cliente pode pagar. Vem calculado do servidor, onde mora o
+   * prazo. Nulo quando o pedido já saiu de "aguardando pagamento".
+   */
+  expiraEm?: string | null;
   createdAt: string;
   itens: ItemPedido[];
   pagamentos: Pagamento[];

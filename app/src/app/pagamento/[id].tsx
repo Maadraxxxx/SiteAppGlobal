@@ -10,6 +10,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { pedidosApi } from '@/api/pedidos';
 import { usePagamentoDoPedido, usePedido } from '@/hooks/usePedidos';
+import { usePrazo } from '@/lib/prazo';
 import { useTheme } from '@/hooks/use-theme';
 
 function moeda(valor: string | number) {
@@ -33,6 +34,7 @@ export default function PagamentoScreen() {
   const consulta = usePagamentoDoPedido(id, jaTemPix);
   const pagamento = consulta.data?.pagamento ?? pagamentoExistente;
   const aprovado = pagamento?.status === 'APROVADO';
+  const prazo = usePrazo(aprovado ? null : pedido.data?.pedido.expiraEm);
 
   async function handleGerarPix() {
     setError(undefined);
@@ -98,6 +100,32 @@ export default function PagamentoScreen() {
           {moeda(pedido.data.pedido.total)}
         </ThemedText>
       </View>
+
+      {/* O pedido é cancelado sozinho quando o prazo acaba. Aqui, com o QR na
+          mão, é onde o relógio mais precisa aparecer. */}
+      {prazo ? (
+        <View
+          style={[
+            styles.prazo,
+            {
+              borderColor: prazo.urgente ? theme.danger : theme.border,
+              backgroundColor: prazo.urgente ? theme.backgroundElement : 'transparent',
+            },
+          ]}>
+          <Ionicons
+            name={prazo.vencido ? 'close-circle-outline' : 'time-outline'}
+            size={18}
+            color={prazo.urgente ? theme.danger : theme.textSecondary}
+          />
+          <ThemedText
+            type={prazo.urgente ? 'smallBold' : 'small'}
+            style={[styles.prazoTexto, { color: prazo.urgente ? theme.danger : theme.textSecondary }]}>
+            {prazo.vencido
+              ? 'O prazo deste pedido acabou. Ele foi cancelado — faça um novo pedido para comprar.'
+              : `Você tem ${prazo.texto} para pagar. Passado o prazo, o pedido é cancelado automaticamente.`}
+          </ThemedText>
+        </View>
+      ) : null}
 
       {!jaTemPix ? (
         <>
@@ -200,6 +228,17 @@ const styles = StyleSheet.create({
   },
   centralizado: {
     textAlign: 'center',
+  },
+  prazo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    padding: Spacing.three,
+    borderRadius: Radius.small,
+    borderWidth: 1,
+  },
+  prazoTexto: {
+    flex: 1,
   },
   resumo: {
     padding: Spacing.three,
