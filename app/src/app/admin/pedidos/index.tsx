@@ -10,6 +10,7 @@ import {
   ScrollView,
   StyleSheet,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { envioApi, urlDeDownload } from '@/api/envio';
@@ -68,6 +69,71 @@ function Busca({ valor, onChange }: { valor: string; onChange: (v: string) => vo
         </Pressable>
       ) : null}
     </View>
+  );
+}
+
+/** Célula vazia que fecha a última linha da grade — não desenha nada. */
+interface Preenchimento {
+  id: string;
+  vazio: true;
+}
+
+/** Numa tela larga uma coluna só deixa metade do monitor vazia. */
+function colunasPara(largura: number) {
+  if (largura >= 1400) return 3;
+  if (largura >= 900) return 2;
+  return 1;
+}
+
+/**
+ * Atalho do topo: mostra quantos pedidos estão em cada situação e, ao tocar,
+ * filtra por ela. É o caminho mais curto entre "quanto tenho pra produzir" e a
+ * lista desses pedidos.
+ */
+function Atalho({
+  icone,
+  rotulo,
+  quantidade,
+  valor,
+  ativo,
+  onPress,
+}: {
+  icone: keyof typeof Ionicons.glyphMap;
+  rotulo: string;
+  quantidade: number;
+  valor?: string;
+  ativo: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.atalho,
+        {
+          backgroundColor: ativo ? theme.primary : theme.backgroundElement,
+          borderColor: ativo ? theme.primary : 'transparent',
+          opacity: pressed ? 0.8 : 1,
+        },
+      ]}>
+      <Ionicons name={icone} size={16} color={ativo ? theme.primaryText : theme.primary} />
+      <ThemedText type="subtitle" style={[styles.atalhoNumero, ativo ? { color: theme.primaryText } : null]}>
+        {quantidade}
+      </ThemedText>
+      <ThemedText
+        type="small"
+        themeColor={ativo ? 'primaryText' : 'textSecondary'}
+        numberOfLines={1}>
+        {rotulo}
+      </ThemedText>
+      {valor ? (
+        <ThemedText type="small" themeColor={ativo ? 'primaryText' : 'text'} numberOfLines={1}>
+          {valor}
+        </ThemedText>
+      ) : null}
+    </Pressable>
   );
 }
 
@@ -141,11 +207,29 @@ export default function AdminPedidosScreen() {
   const [termo, setTermo] = useState('');
   const [filtroPagamento, setFiltroPagamento] = useState<StatusPagamentoPedido | null>(null);
   const [filtroProducao, setFiltroProducao] = useState<StatusProducao | null>(null);
+  const [ordem, setOrdem] = useState<'recentes' | 'valor'>('recentes');
   const theme = useTheme();
   const mostrarBarra = useMostrarBarraDeRolagem();
+  const { width: janela } = useWindowDimensions();
+  const colunas = colunasPara(janela);
 
   const todos = data?.items ?? [];
   const busca = normalizar(termo.trim());
+
+  // Contas do topo. Saem da lista já carregada — não vale uma ida ao servidor
+  // pra somar o que está aqui na mão.
+  const resumo = useMemo(() => {
+    const soma = (lista: typeof todos) => lista.reduce((s, p) => s + Number(p.total), 0);
+    const aguardando = todos.filter((p) => p.statusPagamento === 'AGUARDANDO');
+    const pagos = todos.filter((p) => p.statusPagamento === 'PAGO');
+    return {
+      aguardando: { quantidade: aguardando.length, valor: soma(aguardando) },
+      pagos: { quantidade: pagos.length, valor: soma(pagos) },
+      naFila: todos.filter((p) => p.statusPagamento === 'PAGO' && p.statusProducao === 'AGUARDANDO').length,
+      emProducao: todos.filter((p) => p.statusProducao === 'EM_PRODUCAO').length,
+      enviados: todos.filter((p) => p.statusProducao === 'ENVIADO').length,
+    };
+  }, [todos]);
 
   const pedidos = useMemo(
     () =>
@@ -169,6 +253,30 @@ export default function AdminPedidosScreen() {
       }),
     [todos, filtroPagamento, filtroProducao, busca],
   );
+
+  const ordenados = useMemo(() => {
+    // Cópia antes de ordenar: sort mexe no array original, e o original aqui é
+    // o cache do React Query.
+    const lista = [...pedidos];
+    if (ordem === 'valor') return lista.sort((a, b) => Number(b.total) - Number(a.total));
+    return lista.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+  }, [pedidos, ordem]);
+
+  /**
+   * Os cartões são `flex: 1` pra dividir a linha igualmente, e por isso o
+   * último sozinho na última linha esticava pela largura toda. Completar a
+   * linha com vazios resolve sem precisar calcular largura em pixel — que
+   * erraria pela grossura da barra de rolagem.
+   */
+  const emGrade = useMemo(() => {
+    const sobra = colunas > 1 ? ordenados.length % colunas : 0;
+    if (!sobra) return ordenados as (Pedido | Preenchimento)[];
+    const vazios: Preenchimento[] = Array.from({ length: colunas - sobra }, (_, i) => ({
+      id: `vazio-${i}`,
+      vazio: true,
+    }));
+    return [...ordenados, ...vazios];
+  }, [ordenados, colunas]);
 
   const filtrando = filtroPagamento !== null || filtroProducao !== null || busca.length > 0;
 
@@ -229,9 +337,68 @@ export default function AdminPedidosScreen() {
   }
 
   return (
-    <Screen scroll={false} maxWidth={900} style={styles.screen}>
+    <Screen scroll={false} maxWidth={1400} style={styles.screen}>
       {todos.length ? (
         <View style={[styles.filtros, { borderColor: theme.border }]}>
+          {/* Panorama antes da lista: quantos pedidos em cada situação, e um
+              toque leva direto pra eles. */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.atalhos}>
+            <Atalho
+              icone="hourglass-outline"
+              rotulo="Aguardando"
+              quantidade={resumo.aguardando.quantidade}
+              valor={moeda(resumo.aguardando.valor)}
+              ativo={filtroPagamento === 'AGUARDANDO'}
+              onPress={() => {
+                setFiltroPagamento(filtroPagamento === 'AGUARDANDO' ? null : 'AGUARDANDO');
+                setFiltroProducao(null);
+              }}
+            />
+            <Atalho
+              icone="checkmark-circle-outline"
+              rotulo="Pagos"
+              quantidade={resumo.pagos.quantidade}
+              valor={moeda(resumo.pagos.valor)}
+              ativo={filtroPagamento === 'PAGO' && filtroProducao === null}
+              onPress={() => {
+                setFiltroPagamento(filtroPagamento === 'PAGO' && !filtroProducao ? null : 'PAGO');
+                setFiltroProducao(null);
+              }}
+            />
+            {/* Pago e ainda não produzido: é a fila de trabalho do dia. */}
+            <Atalho
+              icone="layers-outline"
+              rotulo="Na fila"
+              quantidade={resumo.naFila}
+              ativo={filtroPagamento === 'PAGO' && filtroProducao === 'AGUARDANDO'}
+              onPress={() => {
+                const jaEstava = filtroPagamento === 'PAGO' && filtroProducao === 'AGUARDANDO';
+                setFiltroPagamento(jaEstava ? null : 'PAGO');
+                setFiltroProducao(jaEstava ? null : 'AGUARDANDO');
+              }}
+            />
+            <Atalho
+              icone="construct-outline"
+              rotulo="Em produção"
+              quantidade={resumo.emProducao}
+              ativo={filtroProducao === 'EM_PRODUCAO'}
+              onPress={() => {
+                setFiltroProducao(filtroProducao === 'EM_PRODUCAO' ? null : 'EM_PRODUCAO');
+                setFiltroPagamento(null);
+              }}
+            />
+            <Atalho
+              icone="paper-plane-outline"
+              rotulo="Enviados"
+              quantidade={resumo.enviados}
+              ativo={filtroProducao === 'ENVIADO'}
+              onPress={() => {
+                setFiltroProducao(filtroProducao === 'ENVIADO' ? null : 'ENVIADO');
+                setFiltroPagamento(null);
+              }}
+            />
+          </ScrollView>
+
           <Busca valor={termo} onChange={setTermo} />
 
           <LinhaDeFiltro
@@ -249,38 +416,58 @@ export default function AdminPedidosScreen() {
             onSelecionar={setFiltroProducao}
           />
 
-          {filtrando ? (
-            <View style={styles.resultado}>
-              <ThemedText type="small" themeColor="textSecondary">
-                {pedidos.length} de {todos.length} {todos.length === 1 ? 'pedido' : 'pedidos'}
-              </ThemedText>
-              <Pressable
-                onPress={() => {
-                  setFiltroPagamento(null);
-                  setFiltroProducao(null);
-                  setTermo('');
-                }}
-                hitSlop={8}>
-                <ThemedText type="small" themeColor="primary">
-                  Limpar
-                </ThemedText>
-              </Pressable>
+          <View style={styles.resultado}>
+            <ThemedText type="small" themeColor="textSecondary">
+              {filtrando
+                ? `${pedidos.length} de ${todos.length} ${todos.length === 1 ? 'pedido' : 'pedidos'}`
+                : `${todos.length} ${todos.length === 1 ? 'pedido' : 'pedidos'}`}
+            </ThemedText>
+
+            <View style={styles.ordenacao}>
+              <Chip
+                texto="Mais recentes"
+                ativo={ordem === 'recentes'}
+                onPress={() => setOrdem('recentes')}
+              />
+              <Chip texto="Maior valor" ativo={ordem === 'valor'} onPress={() => setOrdem('valor')} />
+              {filtrando ? (
+                <Pressable
+                  onPress={() => {
+                    setFiltroPagamento(null);
+                    setFiltroProducao(null);
+                    setTermo('');
+                  }}
+                  hitSlop={8}
+                  style={styles.limpar}>
+                  <ThemedText type="small" themeColor="primary">
+                    Limpar
+                  </ThemedText>
+                </Pressable>
+              ) : null}
             </View>
-          ) : null}
+          </View>
         </View>
       ) : null}
 
       {todos.length && pedidos.length ? (
         <FlatList
+          // O FlatList não aceita trocar numColumns em voo: mudar a key força a
+          // remontagem quando a janela muda de faixa.
+          key={colunas}
+          numColumns={colunas}
+          columnWrapperStyle={colunas > 1 ? styles.coluna : undefined}
           showsVerticalScrollIndicator={mostrarBarra}
-          data={pedidos}
+          data={emGrade}
           keyExtractor={(item) => item.id}
           style={styles.lista}
           contentContainerStyle={styles.listaConteudo}
           renderItem={({ item }) => {
+            if ('vazio' in item) return <View style={styles.preenchimento} />;
+
             // Capa = foto do primeiro item que tiver imagem.
             const capa = item.itens.find((i) => i.produto?.imagemUrl)?.produto?.imagemUrl;
             const extras = item.itens.length - 1;
+            const pecas = item.itens.reduce((s, i) => s + i.quantidade, 0);
 
             return (
               <Pressable
@@ -307,9 +494,17 @@ export default function AdminPedidosScreen() {
                   </View>
 
                   <View style={styles.cardTexto}>
-                    <ThemedText type="smallBold">{moeda(item.total)}</ThemedText>
+                    <View style={styles.cardLinha}>
+                      <ThemedText type="smallBold">{moeda(item.total)}</ThemedText>
+                      {/* O código é o que o cliente cita quando escreve, e era
+                          o único jeito de achar o pedido pela busca. */}
+                      <ThemedText type="small" themeColor="textSecondary">
+                        #{item.id.slice(0, 8)}
+                      </ThemedText>
+                    </View>
                     <ThemedText type="small" numberOfLines={1}>
                       {item.itens[0]?.produto?.nome ?? 'Produto removido'}
+                      {pecas > 1 ? ` · ${pecas} peças` : ''}
                     </ThemedText>
                     <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
                       {item.usuario.nome} · {dataHora(item.createdAt)}
@@ -319,6 +514,14 @@ export default function AdminPedidosScreen() {
                     <View style={styles.tags}>
                       <TagPagamento status={item.statusPagamento} />
                       <TagProducao status={item.statusProducao} />
+                      {item.codigoRastreio ? (
+                        <View style={styles.rastreioMarca}>
+                          <Ionicons name="location-outline" size={12} color={theme.textSecondary} />
+                          <ThemedText type="small" themeColor="textSecondary">
+                            rastreio
+                          </ThemedText>
+                        </View>
+                      ) : null}
                     </View>
                   </View>
                 </View>
@@ -637,11 +840,53 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     borderWidth: 1,
   },
+  atalhos: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+    paddingRight: Spacing.two,
+  },
+  atalho: {
+    minWidth: 132,
+    padding: Spacing.three,
+    borderRadius: Radius.medium,
+    borderWidth: 1,
+    gap: Spacing.half,
+  },
+  atalhoNumero: {
+    fontSize: 22,
+    lineHeight: 28,
+  },
   resultado: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
     gap: Spacing.two,
+  },
+  ordenacao: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  limpar: {
+    paddingHorizontal: Spacing.two,
+  },
+  coluna: {
+    gap: Spacing.two,
+  },
+  preenchimento: {
+    flex: 1,
+  },
+  cardLinha: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  rastreioMarca: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.half,
   },
   lista: {
     flex: 1,
@@ -651,6 +896,9 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.three,
   },
   card: {
+    // Sem isto, na grade de 2 ou 3 colunas o cartão encolhe até o conteúdo em
+    // vez de ocupar a coluna inteira.
+    flex: 1,
     padding: Spacing.three,
     borderRadius: Radius.medium,
   },
