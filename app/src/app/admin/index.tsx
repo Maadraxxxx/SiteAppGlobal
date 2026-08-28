@@ -5,10 +5,11 @@ import { Fragment } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
+import { TagProducao } from '@/components/StatusPedidoTag';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { ROTAS } from '@/lib/rotas';
-import { useResumoPedidosMes } from '@/hooks/usePedidos';
+import { useAdminPedidos, useResumoPedidosMes } from '@/hooks/usePedidos';
 import { useAdminProdutos } from '@/hooks/useProdutos';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -19,6 +20,12 @@ function moeda(valor: string | number) {
   const [inteiro, centavos] = (Number(valor) || 0).toFixed(2).split('.');
   const comMilhar = inteiro.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   return `R$ ${comMilhar},${centavos}`;
+}
+
+function dataCurta(iso: string) {
+  return new Date(iso).toLocaleString('pt-BR', {
+    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+  });
 }
 
 function nomeDoMes() {
@@ -97,13 +104,18 @@ export default function AdminDashboard() {
   const theme = useTheme();
   const produtos = useAdminProdutos();
   const pedidos = useResumoPedidosMes();
+  const listaPedidos = useAdminPedidos();
 
   const itens = produtos.data?.items ?? [];
   const totalProdutos = produtos.data?.total ?? 0;
   const inativos = itens.filter((p) => !p.ativo).length;
-  const recentes = itens.slice(0, RECENTES);
+  // So pagamento finalizado: pedido aguardando ou cancelado nao e venda, e
+  // poluiria a lista que o admin usa pra ver o que entrou.
+  const recentes = (listaPedidos.data?.items ?? [])
+    .filter((p) => p.statusPagamento === 'PAGO')
+    .slice(0, RECENTES);
   const resumo = pedidos.data?.resumo;
-  const carregando = produtos.isLoading || pedidos.isLoading;
+  const carregando = produtos.isLoading || pedidos.isLoading || listaPedidos.isLoading;
 
   if (carregando) {
     return (
@@ -159,55 +171,67 @@ export default function AdminDashboard() {
       </View>
 
       {/* "Pedidos" e "Novo produto" mudaram pra dentro dos cartões dos números
-          a que pertencem. Sobrou o carrossel, que não tem número pra chamar de
-          seu. */}
-      <Button title="Carrossel da Home" variant="ghost" onPress={() => router.push(ROTAS.adminCarrossel)} />
+          a que pertencem. Aqui ficam os destinos que não têm número próprio —
+          e "Produtos", que é por onde se edita o que já existe. */}
+      <View style={styles.atalhos}>
+        <View style={styles.atalho}>
+          <Button title="Produtos" variant="ghost" onPress={() => router.push(ROTAS.adminProdutos)} />
+        </View>
+        <View style={styles.atalho}>
+          <Button title="Carrossel" variant="ghost" onPress={() => router.push(ROTAS.adminCarrossel)} />
+        </View>
+      </View>
 
       <View style={styles.grupo}>
         <SectionTitle
-          titulo="Últimos produtos"
-          acao={totalProdutos ? { label: 'Ver todos', onPress: () => router.push('/admin/produtos') } : undefined}
+          titulo="Pedidos mais recentes"
+          acao={{ label: 'Ver todos', onPress: () => router.push(ROTAS.adminPedidos) }}
         />
 
         {recentes.length ? (
           <View style={[styles.lista, { backgroundColor: theme.backgroundElement }]}>
-            {recentes.map((produto, i) => (
-              <Fragment key={produto.id}>
-                {i > 0 ? <View style={[styles.divisor, { backgroundColor: theme.border }]} /> : null}
-                <Pressable
-                  onPress={() => router.push(`/admin/produtos/${produto.id}`)}
-                  style={({ pressed }) => [styles.linha, { opacity: pressed ? 0.6 : 1 }]}>
-                  {produto.imagemUrl ? (
-                    <Image source={{ uri: produto.imagemUrl }} style={styles.thumb} contentFit="cover" />
-                  ) : (
-                    <View style={[styles.thumb, { backgroundColor: theme.secondary }]} />
-                  )}
-                  <View style={styles.linhaTexto}>
-                    <ThemedText type="smallBold" numberOfLines={1}>
-                      {produto.nome}
-                    </ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {moeda(produto.preco)}
-                    </ThemedText>
-                  </View>
-                  {!produto.ativo ? (
-                    <View style={[styles.selo, { backgroundColor: theme.backgroundSelected }]}>
-                      <ThemedText type="small" themeColor="textSecondary">
-                        Inativo
+            {recentes.map((pedido, i) => {
+              // Capa = foto do primeiro item que tiver imagem.
+              const capa = pedido.itens.find((x) => x.produto?.imagemUrl)?.produto?.imagemUrl;
+
+              return (
+                <Fragment key={pedido.id}>
+                  {i > 0 ? <View style={[styles.divisor, { backgroundColor: theme.border }]} /> : null}
+                  <Pressable
+                    onPress={() => router.push(ROTAS.adminPedido(pedido.id))}
+                    style={({ pressed }) => [styles.linha, { opacity: pressed ? 0.6 : 1 }]}>
+                    {capa ? (
+                      <Image source={{ uri: capa }} style={styles.thumb} contentFit="cover" />
+                    ) : (
+                      <View style={[styles.thumb, { backgroundColor: theme.secondary }]} />
+                    )}
+                    {/* Valor e etiqueta na primeira linha, nome do produto na
+                        segunda: juntos numa linha só, o nome era cortado no
+                        celular pelo espaço que a etiqueta e a seta ocupam. */}
+                    <View style={styles.linhaTexto}>
+                      <View style={styles.linhaTopo}>
+                        <ThemedText type="smallBold">{moeda(pedido.total)}</ThemedText>
+                        <TagProducao status={pedido.statusProducao} />
+                      </View>
+                      <ThemedText type="small" numberOfLines={1}>
+                        {pedido.itens[0]?.produto?.nome ?? 'Produto removido'}
+                      </ThemedText>
+                      <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                        {pedido.usuario.nome} · {dataCurta(pedido.createdAt)}
                       </ThemedText>
                     </View>
-                  ) : null}
-                  <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
-                </Pressable>
-              </Fragment>
-            ))}
+                    <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
+                  </Pressable>
+                </Fragment>
+              );
+            })}
           </View>
         ) : (
           <View style={[styles.vazio, { backgroundColor: theme.backgroundElement }]}>
-            <Ionicons name="cube-outline" size={28} color={theme.textSecondary} />
-            <ThemedText type="smallBold">Nenhum produto ainda</ThemedText>
+            <Ionicons name="receipt-outline" size={28} color={theme.textSecondary} />
+            <ThemedText type="smallBold">Nenhum pedido pago ainda</ThemedText>
             <ThemedText type="small" themeColor="textSecondary" style={styles.vazioTexto}>
-              Cadastre o primeiro produto pra ele aparecer no catálogo.
+              Assim que um cliente finalizar o pagamento, o pedido aparece aqui.
             </ThemedText>
           </View>
         )}
@@ -273,6 +297,19 @@ const styles = StyleSheet.create({
   statNota: {
     fontSize: 12,
   },
+  linhaTopo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  atalhos: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  atalho: {
+    flex: 1,
+  },
   statAcao: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -307,11 +344,6 @@ const styles = StyleSheet.create({
   linhaTexto: {
     flex: 1,
     gap: Spacing.half,
-  },
-  selo: {
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.half,
-    borderRadius: Radius.pill,
   },
   vazio: {
     alignItems: 'center',

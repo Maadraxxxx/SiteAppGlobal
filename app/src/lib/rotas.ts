@@ -14,6 +14,9 @@ export const ROTAS = {
   enderecos: '/enderecos' as Href,
   adminPedidos: '/admin/pedidos' as Href,
   adminFinanceiro: '/admin/financeiro' as Href,
+  /** Abre a lista de pedidos já com aquele pedido aberto. */
+  adminPedido: (pedidoId: string) => `/admin/pedidos?abrir=${pedidoId}` as Href,
+  adminProdutos: '/admin/produtos' as Href,
   adminCarrossel: '/admin/banners' as Href,
   pedido: (pedidoId: string) => `/pedido/${pedidoId}` as Href,
   rastreio: (pedidoId: string) => `/rastreio/${pedidoId}` as Href,

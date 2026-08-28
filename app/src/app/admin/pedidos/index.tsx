@@ -1,7 +1,8 @@
 import type { Pedido, StatusPagamentoPedido, StatusProducao } from '@global-decora/shared';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useMemo, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -197,6 +198,7 @@ function LinhaDeFiltro<T extends string>({
 }
 
 export default function AdminPedidosScreen() {
+  const { abrir } = useLocalSearchParams<{ abrir?: string }>();
   const { data, isLoading, refetch: recarregar } = useAdminPedidos();
   const atualizar = useAtualizarStatusPedido();
   const [aberto, setAberto] = useState<Pedido | null>(null);
@@ -217,6 +219,20 @@ export default function AdminPedidosScreen() {
 
   const todos = data?.items ?? [];
   const busca = normalizar(termo.trim());
+
+  // Chegou pelo painel com um pedido escolhido: abre a ficha dele assim que a
+  // lista carregar, em vez de largar o admin procurando na grade. O ref marca
+  // que aquele id já foi atendido — senão, qualquer recarga da lista depois
+  // (mudar um status, por exemplo) reabriria a ficha que o admin fechou.
+  const jaAbriu = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!abrir || jaAbriu.current === abrir) return;
+    const alvo = todos.find((p) => p.id === abrir);
+    if (!alvo) return;
+    jaAbriu.current = abrir;
+    setAberto(alvo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [abrir, todos.length]);
 
   // Contas do topo. Saem da lista já carregada — não vale uma ida ao servidor
   // pra somar o que está aqui na mão.
