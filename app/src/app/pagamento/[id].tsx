@@ -1,15 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { pedidosApi } from '@/api/pedidos';
-import { useCart } from '@/context/CartContext';
+import { usePagamento } from '@/context/PagamentoContext';
 import { usePagamentoDoPedido, usePedido } from '@/hooks/usePedidos';
 import { usePrazo } from '@/lib/prazo';
 import { useTheme } from '@/hooks/use-theme';
@@ -23,7 +23,7 @@ export default function PagamentoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
   const pedido = usePedido(id);
-  const { removerItens } = useCart();
+  const { observar } = usePagamento();
   const [gerando, setGerando] = useState(false);
   const [error, setError] = useState<string>();
   const [copiado, setCopiado] = useState(false);
@@ -39,34 +39,15 @@ export default function PagamentoScreen() {
   const prazo = usePrazo(aprovado ? null : pedido.data?.pedido.expiraEm);
 
   /**
-   * O carrinho só esvazia quando o pagamento é confirmado — e só os itens
-   * daquele pedido. Quem abre o PIX e desiste continua achando os produtos
-   * onde deixou.
-   *
-   * Os dois refs evitam mexer no carrinho fora da hora: `viuPendente` garante
-   * que a confirmação aconteceu com a tela aberta (abrir um pedido pago de
-   * ontem não pode limpar o carrinho de hoje), e `jaLimpou` impede repetir a
-   * cada nova consulta ao servidor.
+   * Quem espera a confirmação e limpa o carrinho é o PagamentoProvider, na
+   * raiz do app — assim o aviso aparece mesmo se o cliente sair desta tela pra
+   * continuar olhando a loja, que é o que acontece na prática enquanto o PIX
+   * não cai. Aqui só registramos o pedido pra ele acompanhar.
    */
-  const viuPendente = useRef(false);
-  const jaLimpou = useRef(false);
-
   useEffect(() => {
-    if (!aprovado) {
-      viuPendente.current = true;
-      return;
-    }
-    if (!viuPendente.current || jaLimpou.current) return;
-
-    const itens = pedido.data?.pedido.itens;
-    if (!itens?.length) return;
-
-    jaLimpou.current = true;
-    void removerItens(
-      itens.map((item) => `${item.produto?.id ?? ''}|${item.geracaoImagem?.id ?? ''}`),
-    );
+    if (jaTemPix && id) observar(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aprovado]);
+  }, [jaTemPix, id]);
 
   async function handleGerarPix() {
     setError(undefined);
@@ -101,23 +82,6 @@ export default function PagamentoScreen() {
     return (
       <Screen style={styles.centered}>
         <ThemedText themeColor="textSecondary">Pedido não encontrado.</ThemedText>
-      </Screen>
-    );
-  }
-
-  if (aprovado) {
-    return (
-      <Screen maxWidth={640} style={styles.centered}>
-        <View style={[styles.selo, { backgroundColor: theme.success }]}>
-          <Ionicons name="checkmark" size={36} color="#FFFFFF" />
-        </View>
-        <ThemedText type="subtitle">Pagamento confirmado!</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary" style={styles.centralizado}>
-          Recebemos {moeda(pedido.data.pedido.total)}. Seu pedido já entrou na fila de produção.
-        </ThemedText>
-        <View style={styles.acao}>
-          <Button title="Ver meus pedidos" onPress={() => router.replace('/pedidos')} />
-        </View>
       </Screen>
     );
   }
@@ -331,17 +295,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     borderRadius: Radius.pill,
-  },
-  selo: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.two,
-  },
-  acao: {
-    width: '100%',
-    marginTop: Spacing.three,
   },
 });

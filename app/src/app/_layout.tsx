@@ -18,6 +18,7 @@ import { CABECALHO } from '@/constants/cabecalho';
 import { Colors } from '@/constants/theme';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
+import { PagamentoProvider } from '@/context/PagamentoContext';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -57,6 +58,7 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <CartProvider>
+          <PagamentoProvider>
           <ThemeProvider
             value={{
               ...DefaultTheme,
@@ -95,6 +97,7 @@ export default function RootLayout() {
                 dos providers pra o app já estar montado por trás quando sair. */}
             {mostrandoIntro ? <IntroVideo onFim={() => setMostrandoIntro(false)} /> : null}
           </ThemeProvider>
+          </PagamentoProvider>
         </CartProvider>
       </AuthProvider>
     </QueryClientProvider>
