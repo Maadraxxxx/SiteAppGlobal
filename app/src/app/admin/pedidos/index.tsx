@@ -205,8 +205,10 @@ export default function AdminPedidosScreen() {
   const [gerandoEtiqueta, setGerandoEtiqueta] = useState(false);
   const [salvandoRastreio, setSalvandoRastreio] = useState(false);
   const [termo, setTermo] = useState('');
-  const [filtroPagamento, setFiltroPagamento] = useState<StatusPagamentoPedido | null>(null);
-  const [filtroProducao, setFiltroProducao] = useState<StatusProducao | null>(null);
+  // A tela abre já na fila de trabalho do dia — pago e ainda não produzido —
+  // que é o que o admin vem ver na maioria das vezes. "Limpar" mostra todos.
+  const [filtroPagamento, setFiltroPagamento] = useState<StatusPagamentoPedido | null>('PAGO');
+  const [filtroProducao, setFiltroProducao] = useState<StatusProducao | null>('AGUARDANDO');
   const [ordem, setOrdem] = useState<'recentes' | 'valor'>('recentes');
   const theme = useTheme();
   const mostrarBarra = useMostrarBarraDeRolagem();
