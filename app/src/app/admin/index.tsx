@@ -33,14 +33,24 @@ function nomeDoMes() {
 }
 
 function SectionTitle({ titulo, acao }: { titulo: string; acao?: { label: string; onPress: () => void } }) {
+  const theme = useTheme();
+
   return (
     <View style={styles.sectionHeader}>
       <ThemedText type="small" themeColor="textSecondary" style={styles.sectionTitulo}>
         {titulo}
       </ThemedText>
       {acao ? (
-        <Pressable onPress={acao.onPress} hitSlop={8}>
-          <ThemedText type="smallBold" themeColor="primary">
+        // Mesma pastilha cheia da Home: o link em texto se perdia ao lado do
+        // rótulo da seção e não parecia clicável.
+        <Pressable
+          onPress={acao.onPress}
+          hitSlop={8}
+          style={({ pressed }) => [
+            styles.sectionAcao,
+            { backgroundColor: theme.primary, opacity: pressed ? 0.8 : 1 },
+          ]}>
+          <ThemedText type="smallBold" themeColor="primaryText">
             {acao.label}
           </ThemedText>
         </Pressable>
@@ -256,6 +266,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  sectionAcao: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one,
+    borderRadius: Radius.pill,
   },
   sectionTitulo: {
     textTransform: 'uppercase',
