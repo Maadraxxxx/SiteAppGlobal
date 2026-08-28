@@ -8,7 +8,8 @@
     "scheme": "globaldecora",
     "userInterfaceStyle": "light",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "bundleIdentifier": "com.globaldecora.app",
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
