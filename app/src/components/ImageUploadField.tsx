@@ -2,10 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { uploadImagem } from '@/api/uploads';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { RecorteDeImagem } from './RecorteDeImagem';
 import { ThemedText } from './themed-text';
 
 interface Props {
@@ -20,6 +21,8 @@ interface Props {
 export function ImageUploadField({ value, onChange, aspect = [1, 1], boxWidth = 160, boxHeight }: Props) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string>();
+  // Imagem escolhida esperando o enquadramento, so na web.
+  const [paraRecortar, setParaRecortar] = useState<string>();
   const theme = useTheme();
   const height = boxHeight ?? (boxWidth * aspect[1]) / aspect[0];
 
@@ -33,19 +36,33 @@ export function ImageUploadField({ value, onChange, aspect = [1, 1], boxWidth = 
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      quality: 0.8,
-      allowsEditing: true,
+      quality: 0.9,
+      // Na web esta opção não faz nada — quem recorta lá é a nossa tela. No app
+      // nativo o editor do sistema é melhor que qualquer coisa que a gente faça.
+      allowsEditing: Platform.OS !== 'web',
       aspect,
     });
 
     if (result.canceled || !result.assets[0]) return;
 
     const asset = result.assets[0];
+
+    if (Platform.OS === 'web') {
+      setParaRecortar(asset.uri);
+      return;
+    }
+
+    await enviar(asset.uri, asset.fileName ?? undefined, asset.mimeType ?? undefined);
+  }
+
+  async function enviar(uri: string, filename?: string, mimeType?: string) {
     setUploading(true);
     try {
-      const filename = asset.fileName ?? `imagem-${Date.now()}.jpg`;
-      const mimeType = asset.mimeType ?? 'image/jpeg';
-      const url = await uploadImagem(asset.uri, filename, mimeType);
+      const url = await uploadImagem(
+        uri,
+        filename ?? `imagem-${Date.now()}.jpg`,
+        mimeType ?? 'image/jpeg',
+      );
       onChange(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao enviar imagem');
@@ -56,6 +73,18 @@ export function ImageUploadField({ value, onChange, aspect = [1, 1], boxWidth = 
 
   return (
     <View style={styles.container}>
+      {paraRecortar ? (
+        <RecorteDeImagem
+          uri={paraRecortar}
+          aspect={aspect}
+          onCancelar={() => setParaRecortar(undefined)}
+          onConfirmar={(recortada) => {
+            setParaRecortar(undefined);
+            void enviar(recortada);
+          }}
+        />
+      ) : null}
+
       <Pressable
         onPress={handlePick}
         disabled={uploading}
