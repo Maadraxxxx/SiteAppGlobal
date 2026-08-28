@@ -97,7 +97,9 @@ export default function CheckoutScreen() {
         itens: itensParaApi,
         frete: { enderecoId, servicoId: frete.id },
       });
-      clear();
+      // Espera o carrinho ser gravado vazio antes de trocar de tela: sair
+      // antes deixava o pedido fechado e o carrinho cheio ao mesmo tempo.
+      await clear();
       router.replace(ROTAS.pagamento(pedido.id));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Nao foi possivel criar o pedido');

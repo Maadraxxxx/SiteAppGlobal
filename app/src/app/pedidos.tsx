@@ -48,7 +48,7 @@ function PrazoDePagamento({ expiraEm }: { expiraEm?: string | null }) {
 
 export default function PedidosScreen() {
   const { usuario } = useAuth();
-  const { data: dados, isLoading } = useMeusPedidos();
+  const { data: dados, isLoading, isError, refetch } = useMeusPedidos();
   const theme = useTheme();
   const mostrarBarra = useMostrarBarraDeRolagem();
 
@@ -68,6 +68,23 @@ export default function PedidosScreen() {
     return (
       <Screen style={styles.centered}>
         <ActivityIndicator />
+      </Screen>
+    );
+  }
+
+  // Sem isto a falha virava "você ainda não tem pedidos": a lista vinha vazia
+  // por erro e a tela dizia que a compra nunca existiu.
+  if (isError) {
+    return (
+      <Screen style={styles.centered}>
+        <Ionicons name="cloud-offline-outline" size={40} color={theme.textSecondary} />
+        <ThemedText type="smallBold">Não deu para carregar seus pedidos</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.centralizado}>
+          Seus pedidos continuam salvos. Verifique a conexão e tente de novo.
+        </ThemedText>
+        <View style={styles.acao}>
+          <Button title="Tentar de novo" onPress={() => refetch()} />
+        </View>
       </Screen>
     );
   }

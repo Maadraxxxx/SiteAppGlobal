@@ -228,8 +228,22 @@ export async function limparPedidosNaoPagos() {
   return { cancelados: cancelados.count, apagados };
 }
 
+/**
+ * A limpeza pega carona na leitura da lista, mas nao pode derrubar a leitura:
+ * uma falha na faxina deixaria o cliente sem ver os pedidos dele, o que e bem
+ * pior que um pedido velho ficar mais um tempo na lista. Falhou, segue o jogo
+ * e tenta de novo na proxima consulta.
+ */
+async function limpezaSilenciosa() {
+  try {
+    await limparPedidosNaoPagos();
+  } catch (erro) {
+    console.error('[pedidos] limpeza automatica falhou, seguindo com a listagem:', erro);
+  }
+}
+
 export async function listarMeusPedidos(usuarioId: string) {
-  await limparPedidosNaoPagos();
+  await limpezaSilenciosa();
   const pedidos = await prisma.pedido.findMany({
     where: { usuarioId },
     orderBy: { createdAt: 'desc' },
@@ -239,7 +253,7 @@ export async function listarMeusPedidos(usuarioId: string) {
 }
 
 export async function listarPedidosAdmin() {
-  await limparPedidosNaoPagos();
+  await limpezaSilenciosa();
   const pedidos = await prisma.pedido.findMany({ orderBy: { createdAt: 'desc' }, include: INCLUDE_PEDIDO });
   return pedidos.map(comPrazo);
 }

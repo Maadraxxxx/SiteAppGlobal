@@ -22,7 +22,8 @@ interface CartContextValue {
   addItem: (produto: Produto, quantidade?: number, geracao?: CartItem['geracao']) => void;
   removeItem: (chave: string) => void;
   updateQuantidade: (chave: string, quantidade: number) => void;
-  clear: () => void;
+  /** Espera a gravação: quem esvazia o carrinho costuma sair da tela em seguida. */
+  clear: () => Promise<void>;
 }
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
@@ -75,8 +76,15 @@ export function CartProvider({ children }: PropsWithChildren) {
     setItems((prev) => prev.map((item) => (chaveDoItem(item) === chave ? { ...item, quantidade } : item)));
   }
 
-  function clear() {
+  /**
+   * Grava o carrinho vazio na hora, sem esperar o efeito que persiste o estado.
+   * Depois de fechar o pedido a tela troca na sequência, e se a página for
+   * recarregada antes de o efeito rodar o carrinho voltava do armazenamento
+   * como se a compra não tivesse acontecido.
+   */
+  async function clear() {
     setItems([]);
+    await cartStorage.set(JSON.stringify([]));
   }
 
   const totalItens = useMemo(() => items.reduce((sum, item) => sum + item.quantidade, 0), [items]);
