@@ -47,20 +47,19 @@ function StatCard({
   valor,
   label,
   nota,
-  onPress,
+  acao,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   valor: number;
   label: string;
   nota?: string;
-  /** Sem onPress o cartao e so informativo — e o caso de categoria, que nao
-   * tem tela propria (e criada dentro do formulario do produto). */
-  onPress?: () => void;
+  /** A ação daquele número, dentro do próprio cartão. */
+  acao?: { label: string; onPress: () => void };
 }) {
   const theme = useTheme();
 
-  const conteudo = (
-    <>
+  return (
+    <View style={[styles.stat, { backgroundColor: theme.backgroundElement }]}>
       <Ionicons name={icon} size={18} color={theme.primary} />
       <ThemedText type="subtitle" style={styles.statValor}>
         {valor}
@@ -73,22 +72,24 @@ function StatCard({
           {nota}
         </ThemedText>
       ) : null}
-    </>
-  );
 
-  if (!onPress) {
-    return <View style={[styles.stat, { backgroundColor: theme.backgroundElement }]}>{conteudo}</View>;
-  }
-
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.stat,
-        { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 },
-      ]}>
-      {conteudo}
-    </Pressable>
+      {acao ? (
+        // Botão próprio, e não o <Button> comum: aquele tem 24px de padding
+        // lateral e o rótulo quebrava em duas linhas dentro de meio cartão.
+        // Contornado em vez de sólido pra não disputar com o painel financeiro,
+        // que é a única peça laranja cheia da tela.
+        <Pressable
+          onPress={acao.onPress}
+          style={({ pressed }) => [
+            styles.statAcao,
+            { borderColor: theme.primary, opacity: pressed ? 0.6 : 1 },
+          ]}>
+          <ThemedText type="smallBold" themeColor="primary" numberOfLines={1}>
+            {acao.label}
+          </ThemedText>
+        </Pressable>
+      ) : null}
+    </View>
   );
 }
 
@@ -145,31 +146,22 @@ export default function AdminDashboard() {
             icon="receipt-outline"
             valor={resumo?.quantidade ?? 0}
             label="Pedidos no mês"
-            onPress={() => router.push(ROTAS.adminPedidos)}
+            acao={{ label: 'Pedidos', onPress: () => router.push(ROTAS.adminPedidos) }}
           />
           <StatCard
             icon="cube-outline"
             valor={totalProdutos}
             label="Produtos"
             nota={inativos ? `${inativos} inativo${inativos > 1 ? 's' : ''}` : undefined}
-            onPress={() => router.push('/admin/produtos')}
+            acao={{ label: 'Novo produto', onPress: () => router.push('/admin/produtos/novo') }}
           />
         </View>
       </View>
 
-      {/* "Novo produto" sozinho em cima: dividido em três, o rótulo quebrava em
-          duas linhas e o botão ficava mais alto que os vizinhos. */}
-      <View style={styles.acoes}>
-        <Button title="Novo produto" onPress={() => router.push('/admin/produtos/novo')} />
-        <View style={styles.acoesSecundarias}>
-          <View style={styles.acaoBotao}>
-            <Button title="Pedidos" variant="ghost" onPress={() => router.push(ROTAS.adminPedidos)} />
-          </View>
-          <View style={styles.acaoBotao}>
-            <Button title="Carrossel" variant="ghost" onPress={() => router.push(ROTAS.adminCarrossel)} />
-          </View>
-        </View>
-      </View>
+      {/* "Pedidos" e "Novo produto" mudaram pra dentro dos cartões dos números
+          a que pertencem. Sobrou o carrossel, que não tem número pra chamar de
+          seu. */}
+      <Button title="Carrossel da Home" variant="ghost" onPress={() => router.push(ROTAS.adminCarrossel)} />
 
       <View style={styles.grupo}>
         <SectionTitle
@@ -281,15 +273,17 @@ const styles = StyleSheet.create({
   statNota: {
     fontSize: 12,
   },
-  acoes: {
-    gap: Spacing.two,
-  },
-  acoesSecundarias: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-  },
-  acaoBotao: {
-    flex: 1,
+  statAcao: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.two,
+    borderRadius: Radius.small,
+    borderWidth: 1,
+    // Colado no rodapé do cartão: um dos dois tem a linha de "inativos" e sem
+    // isto os botões ficavam em alturas diferentes, lado a lado.
+    marginTop: 'auto',
+    paddingTop: Spacing.two,
   },
   lista: {
     borderRadius: Radius.medium,
