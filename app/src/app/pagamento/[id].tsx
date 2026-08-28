@@ -2,13 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { pedidosApi } from '@/api/pedidos';
+import { useCart } from '@/context/CartContext';
 import { usePagamentoDoPedido, usePedido } from '@/hooks/usePedidos';
 import { usePrazo } from '@/lib/prazo';
 import { useTheme } from '@/hooks/use-theme';
@@ -22,6 +23,7 @@ export default function PagamentoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
   const pedido = usePedido(id);
+  const { removerItens } = useCart();
   const [gerando, setGerando] = useState(false);
   const [error, setError] = useState<string>();
   const [copiado, setCopiado] = useState(false);
@@ -35,6 +37,36 @@ export default function PagamentoScreen() {
   const pagamento = consulta.data?.pagamento ?? pagamentoExistente;
   const aprovado = pagamento?.status === 'APROVADO';
   const prazo = usePrazo(aprovado ? null : pedido.data?.pedido.expiraEm);
+
+  /**
+   * O carrinho só esvazia quando o pagamento é confirmado — e só os itens
+   * daquele pedido. Quem abre o PIX e desiste continua achando os produtos
+   * onde deixou.
+   *
+   * Os dois refs evitam mexer no carrinho fora da hora: `viuPendente` garante
+   * que a confirmação aconteceu com a tela aberta (abrir um pedido pago de
+   * ontem não pode limpar o carrinho de hoje), e `jaLimpou` impede repetir a
+   * cada nova consulta ao servidor.
+   */
+  const viuPendente = useRef(false);
+  const jaLimpou = useRef(false);
+
+  useEffect(() => {
+    if (!aprovado) {
+      viuPendente.current = true;
+      return;
+    }
+    if (!viuPendente.current || jaLimpou.current) return;
+
+    const itens = pedido.data?.pedido.itens;
+    if (!itens?.length) return;
+
+    jaLimpou.current = true;
+    void removerItens(
+      itens.map((item) => `${item.produto?.id ?? ''}|${item.geracaoImagem?.id ?? ''}`),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aprovado]);
 
   async function handleGerarPix() {
     setError(undefined);

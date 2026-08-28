@@ -24,6 +24,8 @@ interface CartContextValue {
   updateQuantidade: (chave: string, quantidade: number) => void;
   /** Espera a gravação: quem esvazia o carrinho costuma sair da tela em seguida. */
   clear: () => Promise<void>;
+  /** Tira do carrinho só o que foi pago, deixando o resto no lugar. */
+  removerItens: (chaves: string[]) => Promise<void>;
 }
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
@@ -87,6 +89,18 @@ export function CartProvider({ children }: PropsWithChildren) {
     await cartStorage.set(JSON.stringify([]));
   }
 
+  /**
+   * Usado quando um pagamento é confirmado: saem só os itens daquele pedido.
+   * Esvaziar tudo levaria junto o que o cliente escolheu depois, enquanto
+   * esperava o PIX cair.
+   */
+  async function removerItens(chaves: string[]) {
+    const alvo = new Set(chaves);
+    const restantes = items.filter((item) => !alvo.has(chaveDoItem(item)));
+    setItems(restantes);
+    await cartStorage.set(JSON.stringify(restantes));
+  }
+
   const totalItens = useMemo(() => items.reduce((sum, item) => sum + item.quantidade, 0), [items]);
   const totalPreco = useMemo(
     () => items.reduce((sum, item) => sum + Number(item.produto.preco) * item.quantidade, 0),
@@ -94,7 +108,8 @@ export function CartProvider({ children }: PropsWithChildren) {
   );
 
   return (
-    <CartContext.Provider value={{ items, totalItens, totalPreco, addItem, removeItem, updateQuantidade, clear }}>
+    <CartContext.Provider
+      value={{ items, totalItens, totalPreco, addItem, removeItem, removerItens, updateQuantidade, clear }}>
       {children}
     </CartContext.Provider>
   );

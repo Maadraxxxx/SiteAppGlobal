@@ -27,7 +27,7 @@ function resumoEndereco(e: Endereco) {
 }
 
 export default function CheckoutScreen() {
-  const { items, totalPreco, clear } = useCart();
+  const { items, totalPreco } = useCart();
   const { usuario } = useAuth();
   const { data, isLoading } = useEnderecos();
   const criarEndereco = useCriarEndereco();
@@ -97,9 +97,9 @@ export default function CheckoutScreen() {
         itens: itensParaApi,
         frete: { enderecoId, servicoId: frete.id },
       });
-      // Espera o carrinho ser gravado vazio antes de trocar de tela: sair
-      // antes deixava o pedido fechado e o carrinho cheio ao mesmo tempo.
-      await clear();
+      // O carrinho NÃO é esvaziado aqui. Fechar o pedido não é comprar: quem
+      // abre o PIX e desiste precisa achar os produtos onde deixou. Quem
+      // limpa é a tela de pagamento, quando a confirmação chega.
       router.replace(ROTAS.pagamento(pedido.id));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Nao foi possivel criar o pedido');
