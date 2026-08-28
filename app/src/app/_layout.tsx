@@ -8,7 +8,6 @@ import {
 } from '@expo-google-fonts/poppins';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
-import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
@@ -64,8 +63,8 @@ export default function RootLayout() {
             {/* headerLeft aqui em cima vale pra todas as telas com cabeçalho: a
                 seta nativa some quando não há histórico (link aberto direto,
                 página recarregada no navegador) e deixava o cliente sem saída.
-                O tintColor vem do próprio cabeçalho, então a seta continua
-                branca sobre o banner do produto. */}
+                A cor vem do tintColor do próprio cabeçalho, então a seta
+                acompanha se alguma tela usar fundo escuro. */}
             <Stack
               screenOptions={{
                 headerShown: false,
@@ -74,21 +73,10 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="(auth)/login" options={{ headerShown: true, title: 'Entrar' }} />
               <Stack.Screen name="(auth)/register" options={{ headerShown: true, title: 'Criar conta' }} />
-              <Stack.Screen
-                name="produto/[id]"
-                options={{
-                  headerShown: true,
-                  title: '',
-                  headerTintColor: '#FFFFFF',
-                  headerBackground: () => (
-                    <Image
-                      source={require('@/assets/images/header-banner.jpg')}
-                      style={{ width: '100%', height: '100%' }}
-                      contentFit="cover"
-                    />
-                  ),
-                }}
-              />
+              {/* Cabeçalho liso, só com a seta: o banner da marca competia com
+                  a foto do produto logo abaixo. Sem ele sai também o tint
+                  branco, que deixaria a seta invisível no fundo claro. */}
+              <Stack.Screen name="produto/[id]" options={{ headerShown: true, title: '' }} />
               <Stack.Screen name="carrinho" options={{ headerShown: true, title: 'Carrinho' }} />
               <Stack.Screen name="pedidos" options={{ headerShown: true, title: 'Meus Pedidos' }} />
               <Stack.Screen name="enderecos" options={{ headerShown: true, title: 'Meus Endereços' }} />
