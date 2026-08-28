@@ -15,14 +15,24 @@ import { useTheme } from '@/hooks/use-theme';
 const DESTAQUE_CARD_WIDTH = 160;
 
 function SectionHeader({ titulo, acao }: { titulo: string; acao?: { label: string; onPress: () => void } }) {
+  const theme = useTheme();
+
   return (
     <View style={styles.sectionHeader}>
       <ThemedText type="subtitle" style={styles.sectionTitle}>
         {titulo}
       </ThemedText>
       {acao ? (
-        <Pressable onPress={acao.onPress} hitSlop={8}>
-          <ThemedText type="smallBold" themeColor="primary">
+        // Pastilha cheia em vez de texto solto: ao lado de um título grande, o
+        // link se perdia e não parecia clicável.
+        <Pressable
+          onPress={acao.onPress}
+          hitSlop={8}
+          style={({ pressed }) => [
+            styles.sectionAcao,
+            { backgroundColor: theme.primary, opacity: pressed ? 0.8 : 1 },
+          ]}>
+          <ThemedText type="smallBold" themeColor="primaryText">
             {acao.label}
           </ThemedText>
         </Pressable>
@@ -121,6 +131,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  sectionAcao: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one,
+    borderRadius: Radius.pill,
   },
   sectionTitle: {
     fontSize: 20,
