@@ -64,8 +64,13 @@ export function IntroVideo({ onFim }: { onFim: () => void }) {
 
   const player = useVideoPlayer(VIDEO, (player) => {
     player.loop = false;
-    // Autoplay com som é bloqueado pelo navegador; mudo passa.
-    player.muted = true;
+    // No navegador, autoplay com som é bloqueado — mudo é a única forma de a
+    // abertura tocar sozinha. No app essa regra não existe, então lá ela sai
+    // com som.
+    player.muted = Platform.OS === 'web';
+    // Abaixa o som de outros apps em vez de calar: se o cliente estava ouvindo
+    // música, ela volta ao normal quando a abertura acaba.
+    player.audioMixingMode = 'duckOthers';
   });
 
   function armarLimite(ms: number) {
