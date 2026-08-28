@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     right: Spacing.two,
   },
   veu: {
-    ...StyleSheet.absoluteFill,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.25)',
   },
   vazio: {
