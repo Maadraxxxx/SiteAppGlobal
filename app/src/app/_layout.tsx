@@ -13,6 +13,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import { BotaoVoltar } from '@/components/BotaoVoltar';
 import { IntroVideo } from '@/components/IntroVideo';
+import { CABECALHO } from '@/constants/cabecalho';
 import { Colors } from '@/constants/theme';
 import { AuthProvider } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
@@ -69,6 +70,7 @@ export default function RootLayout() {
               screenOptions={{
                 headerShown: false,
                 headerLeft: ({ tintColor }) => <BotaoVoltar cor={tintColor} />,
+                ...CABECALHO,
               }}>
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="(auth)/login" options={{ headerShown: true, title: 'Entrar' }} />

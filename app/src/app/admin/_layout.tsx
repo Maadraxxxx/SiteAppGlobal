@@ -1,6 +1,7 @@
 import { Redirect, Stack } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 import { BotaoVoltar } from '@/components/BotaoVoltar';
+import { CABECALHO } from '@/constants/cabecalho';
 import { useAuth } from '@/context/AuthContext';
 
 export default function AdminLayout() {
@@ -25,6 +26,7 @@ export default function AdminLayout() {
         // Mesma seta do resto do app: sem histórico ela leva pra Home em vez
         // de sumir e deixar o admin preso na tela.
         headerLeft: ({ tintColor }) => <BotaoVoltar cor={tintColor} />,
+        ...CABECALHO,
       }}>
       <Stack.Screen name="index" options={{ title: 'Painel Admin' }} />
       <Stack.Screen name="financeiro" options={{ title: 'Financeiro' }} />
