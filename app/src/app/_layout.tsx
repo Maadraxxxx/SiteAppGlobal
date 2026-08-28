@@ -64,12 +64,11 @@ export default function RootLayout() {
             {/* headerLeft aqui em cima vale pra todas as telas com cabeçalho: a
                 seta nativa some quando não há histórico (link aberto direto,
                 página recarregada no navegador) e deixava o cliente sem saída.
-                A cor vem do tintColor do próprio cabeçalho, então a seta
-                acompanha se alguma tela usar fundo escuro. */}
+                É um círculo cheio na cor da marca, igual em toda tela. */}
             <Stack
               screenOptions={{
                 headerShown: false,
-                headerLeft: ({ tintColor }) => <BotaoVoltar cor={tintColor} />,
+                headerLeft: () => <BotaoVoltar />,
                 ...CABECALHO,
               }}>
               <Stack.Screen name="(tabs)" />

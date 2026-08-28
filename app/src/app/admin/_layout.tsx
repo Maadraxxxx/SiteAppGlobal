@@ -25,7 +25,7 @@ export default function AdminLayout() {
         headerShown: true,
         // Mesma seta do resto do app: sem histórico ela leva pra Home em vez
         // de sumir e deixar o admin preso na tela.
-        headerLeft: ({ tintColor }) => <BotaoVoltar cor={tintColor} />,
+        headerLeft: () => <BotaoVoltar />,
         ...CABECALHO,
       }}>
       <Stack.Screen name="index" options={{ title: 'Painel Admin' }} />
