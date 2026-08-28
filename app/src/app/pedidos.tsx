@@ -104,16 +104,14 @@ export default function PedidosScreen() {
 
           return (
             <Pressable
-              onPress={() =>
-                aguardando
-                  ? router.push(ROTAS.pagamento(item.id))
-                  : podeRastrear
-                    ? router.push(ROTAS.rastreio(item.id))
-                    : undefined
-              }
+              // Todo pedido abre o detalhe, inclusive o cancelado — antes ele
+              // não levava a lugar nenhum, e era justamente onde o cliente
+              // queria entender o que aconteceu. Pagar e rastrear viraram
+              // botões lá dentro.
+              onPress={() => router.push(ROTAS.pedido(item.id))}
               style={({ pressed }) => [
                 styles.card,
-                { backgroundColor: theme.backgroundElement, opacity: pressed && (aguardando || podeRastrear) ? 0.7 : 1 },
+                { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 },
               ]}>
               <View style={styles.cardTopo}>
                 {capa ? (

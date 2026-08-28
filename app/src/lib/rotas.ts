@@ -15,6 +15,7 @@ export const ROTAS = {
   adminPedidos: '/admin/pedidos' as Href,
   adminFinanceiro: '/admin/financeiro' as Href,
   adminCarrossel: '/admin/banners' as Href,
+  pedido: (pedidoId: string) => `/pedido/${pedidoId}` as Href,
   rastreio: (pedidoId: string) => `/rastreio/${pedidoId}` as Href,
   pagamento: (pedidoId: string) => `/pagamento/${pedidoId}` as Href,
 };
