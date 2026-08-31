@@ -34,6 +34,7 @@ export default function AdminLayout() {
       <Stack.Screen name="produtos/index" options={{ title: 'Produtos' }} />
       <Stack.Screen name="produtos/[id]" options={{ title: 'Produto' }} />
       <Stack.Screen name="banners/index" options={{ title: 'Carrossel da Home' }} />
+      <Stack.Screen name="categorias" options={{ title: 'Categorias na Home' }} />
     </Stack>
   );
 }

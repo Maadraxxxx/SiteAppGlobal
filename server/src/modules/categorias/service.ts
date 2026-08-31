@@ -30,3 +30,13 @@ export async function deleteCategoria(id: string) {
   if (emUso > 0) throw conflict(`Ainda em uso por ${emUso} produto(s) — nao pode ser removida`);
   await prisma.categoria.delete({ where: { id } });
 }
+
+/**
+ * Liga ou desliga a vitrine daquela categoria na tela inicial. Fica separado
+ * do cadastro porque e uma decisao de vitrine, nao de nome ou descricao — e o
+ * admin muda isso sem querer reeditar o resto.
+ */
+export async function definirNaHome(id: string, naHome: boolean) {
+  await getCategoria(id);
+  return prisma.categoria.update({ where: { id }, data: { naHome } });
+}

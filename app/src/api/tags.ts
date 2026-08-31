@@ -23,4 +23,10 @@ export const categoriasApi = {
   update: (id: string, nome: string, descricao?: string) =>
     apiRequest<{ categoria: Categoria }>(`/admin/categorias/${id}`, { method: 'PUT', body: { nome, descricao } }),
   remove: (id: string) => apiRequest<void>(`/admin/categorias/${id}`, { method: 'DELETE' }),
+
+  definirNaHome: (id: string, naHome: boolean) =>
+    apiRequest<{ categoria: Categoria }>(`/admin/categorias/${id}/na-home`, {
+      method: 'PUT',
+      body: { naHome },
+    }),
 };

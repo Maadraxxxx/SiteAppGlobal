@@ -190,6 +190,9 @@ export default function AdminDashboard() {
         <View style={styles.atalho}>
           <Button title="Carrossel" variant="ghost" onPress={() => router.push(ROTAS.adminCarrossel)} />
         </View>
+        <View style={styles.atalho}>
+          <Button title="Categorias" variant="ghost" onPress={() => router.push(ROTAS.adminCategorias)} />
+        </View>
       </View>
 
       <View style={styles.grupo}>

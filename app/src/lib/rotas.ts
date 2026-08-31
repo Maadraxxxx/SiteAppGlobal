@@ -11,6 +11,8 @@ type Href = Parameters<typeof router.push>[0];
  */
 export const ROTAS = {
   checkout: '/checkout' as Href,
+  /** Catalogo ja aberto no filtro daquela categoria. */
+  catalogoDaCategoria: (slug: string) => `/(tabs)/catalogo?categoria=${slug}` as Href,
   enderecos: '/enderecos' as Href,
   adminPedidos: '/admin/pedidos' as Href,
   adminFinanceiro: '/admin/financeiro' as Href,
@@ -18,6 +20,7 @@ export const ROTAS = {
   adminPedido: (pedidoId: string) => `/admin/pedidos?abrir=${pedidoId}` as Href,
   adminProdutos: '/admin/produtos' as Href,
   adminCarrossel: '/admin/banners' as Href,
+  adminCategorias: '/admin/categorias' as Href,
   pedido: (pedidoId: string) => `/pedido/${pedidoId}` as Href,
   rastreio: (pedidoId: string) => `/rastreio/${pedidoId}` as Href,
   pagamento: (pedidoId: string) => `/pagamento/${pedidoId}` as Href,

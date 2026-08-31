@@ -8,6 +8,9 @@ const categoriaSchema = z.object({
   descricao: z.string().optional(),
 });
 
+/** Ligar/desligar a vitrine da Home e uma acao so, separada do cadastro. */
+const naHomeSchema = z.object({ naHome: z.boolean() });
+
 export default async function categoriasRoutes(app: FastifyInstance) {
   app.get('/categorias', async (_request, reply) => {
     const items = await categoriasService.listCategorias();
@@ -39,6 +42,13 @@ export default async function categoriasRoutes(app: FastifyInstance) {
       const { id } = request.params as { id: string };
       const { nome, descricao } = categoriaSchema.parse(request.body);
       const categoria = await categoriasService.updateCategoria(id, nome, descricao);
+      return reply.send({ categoria });
+    });
+
+    adminScope.put('/:id/na-home', async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const { naHome } = naHomeSchema.parse(request.body);
+      const categoria = await categoriasService.definirNaHome(id, naHome);
       return reply.send({ categoria });
     });
 

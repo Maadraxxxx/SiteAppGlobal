@@ -15,6 +15,15 @@ export function useCreateCategoria() {
   });
 }
 
+export function useDefinirCategoriaNaHome() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, naHome }: { id: string; naHome: boolean }) =>
+      categoriasApi.definirNaHome(id, naHome),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['categorias'] }),
+  });
+}
+
 export function useRemoveCategoria() {
   const qc = useQueryClient();
   return useMutation({

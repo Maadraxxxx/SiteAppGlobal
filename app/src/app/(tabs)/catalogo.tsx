@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -92,6 +92,7 @@ function useGrade() {
 }
 
 export default function CatalogoScreen() {
+  const { categoria: categoriaDaHome } = useLocalSearchParams<{ categoria?: string }>();
   const [categoriaSlug, setCategoriaSlug] = useState<string>();
   const [formatoSlug, setFormatoSlug] = useState<string>();
   const [estiloSlug, setEstiloSlug] = useState<string>();
@@ -106,6 +107,15 @@ export default function CatalogoScreen() {
     const timeout = setTimeout(() => setSearch(searchInput.trim()), 300);
     return () => clearTimeout(timeout);
   }, [searchInput]);
+
+  // Chegou pela vitrine da Home: aplica o filtro e devolve o parametro pro
+  // estado normal da tela. Sem limpar, tocar a mesma categoria de novo depois
+  // de tirar o filtro na mao nao faria nada — o parametro ja seria o mesmo.
+  useEffect(() => {
+    if (!categoriaDaHome) return;
+    setCategoriaSlug(categoriaDaHome);
+    router.setParams({ categoria: undefined });
+  }, [categoriaDaHome]);
 
   const categorias = useCategorias();
   const formatos = formatosHooks.useList();

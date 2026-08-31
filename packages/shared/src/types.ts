@@ -25,6 +25,8 @@ export interface Categoria {
   nome: string;
   slug: string;
   descricao?: string | null;
+  /** Ganha uma vitrine própria na tela inicial, com os produtos dela. */
+  naHome: boolean;
 }
 
 export interface Produto {

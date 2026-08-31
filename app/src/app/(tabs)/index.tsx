@@ -1,3 +1,4 @@
+import type { Categoria, Produto } from '@global-decora/shared';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
@@ -9,10 +10,13 @@ import { Screen } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { ROTAS } from '@/lib/rotas';
+import { useCategorias } from '@/hooks/useCatalogo';
 import { useProdutos } from '@/hooks/useProdutos';
 import { useTheme } from '@/hooks/use-theme';
 
 const DESTAQUE_CARD_WIDTH = 160;
+const VITRINE_MAX = 8;
 
 function SectionHeader({ titulo, acao }: { titulo: string; acao?: { label: string; onPress: () => void } }) {
   const theme = useTheme();
@@ -41,13 +45,69 @@ function SectionHeader({ titulo, acao }: { titulo: string; acao?: { label: strin
   );
 }
 
+/**
+ * Uma fileira de produtos com titulo e "Ver todos" — o mesmo desenho dos
+ * Destaques. Some sozinha quando a categoria nao tem produto: prateleira vazia
+ * na tela inicial passa impressao de loja parada.
+ */
+function Vitrine({
+  titulo,
+  produtos,
+  verTodos,
+}: {
+  titulo: string;
+  produtos: Produto[];
+  verTodos: () => void;
+}) {
+  if (!produtos.length) return null;
+
+  return (
+    <View style={styles.section}>
+      <SectionHeader titulo={titulo} acao={{ label: 'Ver todos', onPress: verTodos }} />
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.rowBleed}
+        contentContainerStyle={styles.destaquesContent}>
+        {produtos.map((produto) => (
+          <ProductCard
+            key={produto.id}
+            produto={produto}
+            width={DESTAQUE_CARD_WIDTH}
+            onPress={() => router.push(`/produto/${produto.id}`)}
+          />
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+/**
+ * Cada categoria busca os proprios produtos, e por isso e um componente — hook
+ * nao pode ser chamado dentro de um map na tela.
+ */
+function VitrineDaCategoria({ categoria }: { categoria: Categoria }) {
+  const produtos = useProdutos({ categoria: categoria.slug });
+
+  return (
+    <Vitrine
+      titulo={categoria.nome}
+      produtos={produtos.data?.items.slice(0, VITRINE_MAX) ?? []}
+      verTodos={() => router.push(ROTAS.catalogoDaCategoria(categoria.slug))}
+    />
+  );
+}
+
 export default function HomeScreen() {
   const theme = useTheme();
   const { usuario } = useAuth();
   const produtos = useProdutos();
+  const categorias = useCategorias();
 
   const primeiroNome = usuario?.nome?.trim().split(' ')[0];
-  const destaques = produtos.data?.items.slice(0, 8) ?? [];
+  const destaques = produtos.data?.items.slice(0, VITRINE_MAX) ?? [];
+  // Quem escolhe quais aparecem aqui e o admin, na tela "Categorias na Home".
+  const vitrines = categorias.data?.items.filter((c) => c.naHome) ?? [];
 
   return (
     <Screen maxWidth={1200} style={styles.screen}>
@@ -62,28 +122,15 @@ export default function HomeScreen() {
 
       <HeroCarousel />
 
-      {destaques.length ? (
-        <View style={styles.section}>
-          <SectionHeader
-            titulo="Destaques"
-            acao={{ label: 'Ver todos', onPress: () => router.push('/(tabs)/catalogo') }}
-          />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.rowBleed}
-            contentContainerStyle={styles.destaquesContent}>
-            {destaques.map((produto) => (
-              <ProductCard
-                key={produto.id}
-                produto={produto}
-                width={DESTAQUE_CARD_WIDTH}
-                onPress={() => router.push(`/produto/${produto.id}`)}
-              />
-            ))}
-          </ScrollView>
-        </View>
-      ) : null}
+      <Vitrine
+        titulo="Destaques"
+        produtos={destaques}
+        verTodos={() => router.push('/(tabs)/catalogo')}
+      />
+
+      {vitrines.map((categoria) => (
+        <VitrineDaCategoria key={categoria.id} categoria={categoria} />
+      ))}
 
       <Pressable
         onPress={() => router.push('/(tabs)/catalogo')}

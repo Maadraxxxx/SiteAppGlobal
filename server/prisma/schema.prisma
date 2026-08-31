@@ -90,6 +90,11 @@ model Categoria {
   nome      String   @unique
   slug      String   @unique
   descricao String?
+
+  /// Ganha uma vitrine propria na tela inicial, com os produtos dela em
+  /// carrossel — do mesmo jeito que os Destaques. Quem escolhe e o admin.
+  naHome Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
