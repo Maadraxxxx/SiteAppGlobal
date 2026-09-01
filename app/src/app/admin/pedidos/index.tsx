@@ -23,6 +23,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useAdminPedidos, useAtualizarStatusPedido } from '@/hooks/usePedidos';
 import { useTheme } from '@/hooks/use-theme';
+import { rotuloDoTema } from '@/lib/tema';
 import { abrirEmNovaAba, baixarArquivo } from '@/lib/baixar';
 
 const PAGAMENTOS: StatusPagamentoPedido[] = ['AGUARDANDO', 'PAGO', 'CANCELADO'];
@@ -538,7 +539,7 @@ export default function AdminPedidosScreen() {
                     {personalizados.length ? (
                       <ThemedText type="small" themeColor="primary" numberOfLines={1}>
                         {personalizados.length === 1
-                          ? `Arte personalizada: ${personalizados[0]}`
+                          ? `Arte personalizada: ${rotuloDoTema(personalizados[0])}`
                           : `${personalizados.length} artes personalizadas`}
                       </ThemedText>
                     ) : null}
@@ -632,7 +633,7 @@ export default function AdminPedidosScreen() {
                         </ThemedText>
                         {item.geracaoImagem ? (
                           <ThemedText type="small" themeColor="primary" numberOfLines={1}>
-                            Arte personalizada: {item.geracaoImagem.tema}
+                            Arte personalizada: {rotuloDoTema(item.geracaoImagem.tema)}
                           </ThemedText>
                         ) : null}
                       </View>

@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { chaveDoItem, useCart, type CartItem } from '@/context/CartContext';
+import { rotuloDoTema } from '@/lib/tema';
 import { ROTAS } from '@/lib/rotas';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -31,7 +32,7 @@ function CartRow({ item }: { item: CartItem }) {
         </ThemedText>
         {geracao ? (
           <ThemedText type="small" themeColor="primary" numberOfLines={1}>
-            Tema: {geracao.tema}
+            Tema: {rotuloDoTema(geracao.tema)}
           </ThemedText>
         ) : null}
         <ThemedText type="small" themeColor="primary">

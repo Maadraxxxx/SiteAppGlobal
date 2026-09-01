@@ -8,6 +8,7 @@ import { TagPagamento, TagProducao } from '@/components/StatusPedidoTag';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { usePedido } from '@/hooks/usePedidos';
+import { rotuloDoTema } from '@/lib/tema';
 import { usePrazo } from '@/lib/prazo';
 import { ROTAS } from '@/lib/rotas';
 import { useTheme } from '@/hooks/use-theme';
@@ -155,7 +156,7 @@ export default function PedidoScreen() {
                   </ThemedText>
                   {item.geracaoImagem ? (
                     <ThemedText type="small" themeColor="primary" numberOfLines={1}>
-                      Arte personalizada: {item.geracaoImagem.tema}
+                      Arte personalizada: {rotuloDoTema(item.geracaoImagem.tema)}
                     </ThemedText>
                   ) : null}
                   <ThemedText type="small" themeColor="textSecondary">
