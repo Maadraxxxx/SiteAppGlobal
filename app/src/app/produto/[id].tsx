@@ -8,8 +8,10 @@ import { Screen } from '@/components/Screen';
 import { Tag } from '@/components/Tag';
 import { TemaChatModal } from '@/components/TemaChatModal';
 import { ThemedText } from '@/components/themed-text';
+import { VisualizadorDeImagem } from '@/components/VisualizadorDeImagem';
 import { Radius, Spacing } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
+import { compartilharProduto } from '@/lib/compartilhar';
 import { useProduto } from '@/hooks/useProdutos';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -21,6 +23,18 @@ export default function ProdutoDetailScreen() {
   const [quantidade, setQuantidade] = useState(1);
   const [confirmacao, setConfirmacao] = useState<{ quantidade: number } | null>(null);
   const [chatAberto, setChatAberto] = useState(false);
+  const [ampliada, setAmpliada] = useState<string | null>(null);
+  const [avisoLink, setAvisoLink] = useState(false);
+
+  async function handleCompartilhar() {
+    const resultado = await compartilharProduto(produto.nome, produto.id);
+    // Só avisa quando caiu na cópia: no menu nativo a pessoa já viu o que
+    // aconteceu, e um aviso em cima disso seria ruído.
+    if (resultado === 'copiado') {
+      setAvisoLink(true);
+      setTimeout(() => setAvisoLink(false), 2500);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -50,11 +64,45 @@ export default function ProdutoDetailScreen() {
     <Screen>
       <View style={styles.imageWrap}>
         {produto.imagemUrl ? (
-          <Image source={{ uri: produto.imagemUrl }} style={styles.image} contentFit="cover" />
+          // A foto abre em tela cheia: aqui ela e cortada pra caber no card, e
+          // os detalhes da arte se perdem.
+          <Pressable
+            onPress={() => setAmpliada(produto.imagemUrl as string)}
+            accessibilityRole="button"
+            accessibilityLabel="Ver imagem ampliada">
+            <Image source={{ uri: produto.imagemUrl }} style={styles.image} contentFit="cover" />
+          </Pressable>
         ) : (
           <View style={[styles.image, { backgroundColor: theme.secondary }]} />
         )}
+
+        <Pressable
+          onPress={handleCompartilhar}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Compartilhar produto"
+          style={({ pressed }) => [
+            styles.compartilhar,
+            { backgroundColor: theme.primary, opacity: pressed ? 0.7 : 1 },
+          ]}>
+          <Ionicons name="share-social" size={18} color={theme.primaryText} />
+        </Pressable>
       </View>
+
+      {avisoLink ? (
+        <View style={[styles.avisoLink, { backgroundColor: theme.backgroundSelected }]}>
+          <Ionicons name="link" size={16} color={theme.primary} />
+          <ThemedText type="small" themeColor="primary">
+            Link copiado
+          </ThemedText>
+        </View>
+      ) : null}
+
+      <VisualizadorDeImagem
+        uri={ampliada}
+        onFechar={() => setAmpliada(null)}
+        legenda={produto.nome}
+      />
 
       {produto.imagemUrl ? (
         <Pressable
@@ -164,6 +212,25 @@ export default function ProdutoDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  compartilhar: {
+    position: 'absolute',
+    top: Spacing.three,
+    right: Spacing.three,
+    width: 36,
+    height: 36,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avisoLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: Radius.pill,
+  },
   centered: {
     alignItems: 'center',
     justifyContent: 'center',

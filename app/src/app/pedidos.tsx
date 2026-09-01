@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Screen, useMostrarBarraDeRolagem } from '@/components/Screen';
 import { TagPagamento, TagProducao } from '@/components/StatusPedidoTag';
 import { ThemedText } from '@/components/themed-text';
+import { VisualizadorDeImagem } from '@/components/VisualizadorDeImagem';
 import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useMeusPedidos } from '@/hooks/usePedidos';
@@ -47,6 +49,7 @@ function PrazoDePagamento({ expiraEm }: { expiraEm?: string | null }) {
 }
 
 export default function PedidosScreen() {
+  const [ampliada, setAmpliada] = useState<string | null>(null);
   const { usuario } = useAuth();
   const { data: dados, isLoading, isError, refetch } = useMeusPedidos();
   const theme = useTheme();
@@ -108,6 +111,7 @@ export default function PedidosScreen() {
 
   return (
     <Screen scroll={false} maxWidth={800} style={styles.screen}>
+      <VisualizadorDeImagem uri={ampliada} onFechar={() => setAmpliada(null)} />
       <FlatList
           showsVerticalScrollIndicator={mostrarBarra}
         data={pedidos}
@@ -138,7 +142,12 @@ export default function PedidosScreen() {
               ]}>
               <View style={styles.cardTopo}>
                 {capa ? (
-                  <Image source={{ uri: capa }} style={styles.thumb} contentFit="cover" />
+                  <Pressable
+                    onPress={() => setAmpliada(capa)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Ver imagem do pedido">
+                    <Image source={{ uri: capa }} style={styles.thumb} contentFit="cover" />
+                  </Pressable>
                 ) : (
                   <View style={[styles.thumb, { backgroundColor: theme.secondary }]} />
                 )}

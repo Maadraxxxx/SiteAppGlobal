@@ -9,9 +9,11 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
+import * as ScreenCapture from 'expo-screen-capture';
 import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { BotaoVoltar } from '@/components/BotaoVoltar';
 import { IntroVideo } from '@/components/IntroVideo';
 import { CABECALHO } from '@/constants/cabecalho';
@@ -32,7 +34,30 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1 } },
 });
 
+/**
+ * Impede print e gravacao de tela enquanto o app esta aberto.
+ *
+ * So vale no celular: no navegador nao existe API nenhuma pra isso, entao o
+ * site continua printavel — nao ha o que fazer ali. No iPhone funciona do iOS
+ * 13 pra cima; no Android e a mesma flag que os apps de banco usam, que alem de
+ * bloquear o print deixa a miniatura em branco na lista de apps abertos.
+ */
+function useBloquearPrint() {
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    // Aparelho sem suporte: nao ha alternativa, e derrubar a abertura do app
+    // por causa disso seria pior que permitir o print.
+    ScreenCapture.preventScreenCaptureAsync().catch(() => {});
+
+    return () => {
+      ScreenCapture.allowScreenCaptureAsync().catch(() => {});
+    };
+  }, []);
+}
+
 export default function RootLayout() {
+  useBloquearPrint();
   // Abertura da marca: toca uma vez ao abrir e some sozinha no fim.
   const [mostrandoIntro, setMostrandoIntro] = useState(true);
 

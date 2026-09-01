@@ -1,12 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Screen, useMostrarBarraDeRolagem } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { VisualizadorDeImagem } from '@/components/VisualizadorDeImagem';
 import { chaveDoItem, useCart, type CartItem } from '@/context/CartContext';
 import { rotuloDoTema } from '@/lib/tema';
 import { ROTAS } from '@/lib/rotas';
@@ -15,16 +17,27 @@ import { useTheme } from '@/hooks/use-theme';
 function CartRow({ item }: { item: CartItem }) {
   const { updateQuantidade, removeItem } = useCart();
   const theme = useTheme();
+  const [ampliada, setAmpliada] = useState<string | null>(null);
   const { produto, quantidade, geracao } = item;
   const chave = chaveDoItem(item);
+  const foto = geracao?.imagemUrl ?? produto.imagemUrl;
 
   return (
     <View style={[styles.row, { backgroundColor: theme.backgroundElement }]}>
-      {geracao?.imagemUrl || produto.imagemUrl ? (
-        <Image source={{ uri: geracao?.imagemUrl ?? (produto.imagemUrl as string) }} style={styles.thumb} contentFit="cover" />
+      {foto ? (
+        // A miniatura e pequena demais pra conferir a arte encomendada.
+        <Pressable onPress={() => setAmpliada(foto)} accessibilityRole="button" accessibilityLabel="Ver imagem">
+          <Image source={{ uri: foto }} style={styles.thumb} contentFit="cover" />
+        </Pressable>
       ) : (
         <View style={[styles.thumb, { backgroundColor: theme.secondary }]} />
       )}
+
+      <VisualizadorDeImagem
+        uri={ampliada}
+        onFechar={() => setAmpliada(null)}
+        legenda={geracao ? `${produto.nome} · ${rotuloDoTema(geracao.tema)}` : produto.nome}
+      />
 
       <View style={styles.rowInfo}>
         <ThemedText type="smallBold" numberOfLines={1}>
