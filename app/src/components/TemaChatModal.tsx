@@ -24,6 +24,40 @@ import { useTheme } from '@/hooks/use-theme';
 import { Button } from './Button';
 import { ThemedText } from './themed-text';
 
+/**
+ * Abertura do chat. As palavras que o cliente precisa responder ficam na cor
+ * da marca — num paragrafo corrido elas se perdiam, e a pessoa mandava "quero
+ * bonito" em vez de dizer o tema.
+ */
+function Saudacao() {
+  return (
+    <>
+      <ThemedText type="small">
+        Descreva o{' '}
+        <ThemedText type="smallBold" themeColor="primary">
+          tema da sua festa
+        </ThemedText>{' '}
+        e eu adapto esta arte para você.
+      </ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">
+        Vale citar{' '}
+        <ThemedText type="smallBold" themeColor="primary">
+          cores
+        </ThemedText>
+        ,{' '}
+        <ThemedText type="smallBold" themeColor="primary">
+          época do ano
+        </ThemedText>{' '}
+        ou{' '}
+        <ThemedText type="smallBold" themeColor="primary">
+          estilo
+        </ThemedText>
+        .
+      </ThemedText>
+    </>
+  );
+}
+
 function moeda(valor: number) {
   return `R$ ${(valor || 0).toFixed(2).replace('.', ',')}`;
 }
@@ -51,14 +85,9 @@ export function TemaChatModal({ visible, onClose, produto }: Props) {
   const theme = useTheme();
   const { addItem } = useCart();
 
-  const [mensagens, setMensagens] = useState<Mensagem[]>([
-    {
-      id: 'intro',
-      autor: 'bot',
-      texto:
-        'Me conta o tema que você quer pra esse painel (cores, época do ano, estilo...) que eu adapto a imagem pra você.',
-    },
-  ]);
+  // A saudacao e a unica mensagem com texto formatado, entao vive como
+  // componente (abaixo) em vez de string. As outras chegam da API.
+  const [mensagens, setMensagens] = useState<Mensagem[]>([{ id: 'intro', autor: 'bot' }]);
   const [input, setInput] = useState('');
   const [gerando, setGerando] = useState(false);
   const [saldo, setSaldo] = useState<SaldoIA>();
@@ -178,8 +207,18 @@ export function TemaChatModal({ visible, onClose, produto }: Props) {
               </ThemedText>
             ) : null}
           </View>
-          <Pressable onPress={onClose} hitSlop={8}>
-            <Ionicons name="close" size={24} color={theme.text} />
+          {/* Mesmo circulo cheio da seta de voltar do app, pra o fechar nao
+              parecer de outra tela. */}
+          <Pressable
+            onPress={onClose}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Fechar"
+            style={({ pressed }) => [
+              styles.fechar,
+              { backgroundColor: theme.primary, opacity: pressed ? 0.7 : 1 },
+            ]}>
+            <Ionicons name="close" size={20} color={theme.primaryText} />
           </Pressable>
         </View>
 
@@ -192,6 +231,8 @@ export function TemaChatModal({ visible, onClose, produto }: Props) {
                 msg.autor === 'voce' ? styles.bubbleRight : styles.bubbleLeft,
                 { backgroundColor: msg.autor === 'voce' ? theme.primary : theme.backgroundElement },
               ]}>
+              {msg.id === 'intro' ? <Saudacao /> : null}
+
               {msg.texto ? (
                 <ThemedText
                   type="small"
@@ -324,6 +365,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: Spacing.four,
     borderBottomWidth: 1,
+  },
+  fechar: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTexto: {
     gap: Spacing.half,
