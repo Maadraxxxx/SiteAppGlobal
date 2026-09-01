@@ -26,6 +26,10 @@ export const produtosApi = {
 
   get: (id: string) => apiRequest<{ produto: Produto }>(`/produtos/${id}`),
 
+  /** Vitrine de Destaques: ranking de vendas, completado com os mais novos. */
+  maisVendidos: (limite = 8) =>
+    apiRequest<{ items: Produto[]; total: number }>(`/produtos/mais-vendidos?limite=${limite}`),
+
   adminList: (filters?: ProdutoFilters) =>
     apiRequest<PaginatedResult<Produto>>(`/admin/produtos${toQuery(filters)}`),
 

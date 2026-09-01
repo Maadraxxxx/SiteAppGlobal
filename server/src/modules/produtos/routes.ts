@@ -35,6 +35,15 @@ export default async function produtosRoutes(app: FastifyInstance) {
     return reply.send(result);
   });
 
+  // Vitrine de "Destaques" da tela inicial. Rota propria porque a ordem sai de
+  // uma contagem de vendas, nao de um filtro da listagem normal.
+  app.get('/produtos/mais-vendidos', async (request, reply) => {
+    const { limite } = request.query as { limite?: string };
+    const quantidade = Math.min(Math.max(Number(limite) || 8, 1), 20);
+    const resultado = await produtosService.maisVendidos(quantidade);
+    return reply.send(resultado);
+  });
+
   app.get('/produtos/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
     const produto = await produtosService.getProduto(id);

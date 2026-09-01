@@ -12,7 +12,7 @@ import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { ROTAS } from '@/lib/rotas';
 import { useCategorias } from '@/hooks/useCatalogo';
-import { useProdutos } from '@/hooks/useProdutos';
+import { useMaisVendidos, useProdutos } from '@/hooks/useProdutos';
 import { useTheme } from '@/hooks/use-theme';
 
 const DESTAQUE_CARD_WIDTH = 160;
@@ -101,11 +101,13 @@ function VitrineDaCategoria({ categoria }: { categoria: Categoria }) {
 export default function HomeScreen() {
   const theme = useTheme();
   const { usuario } = useAuth();
-  const produtos = useProdutos();
+  const maisVendidos = useMaisVendidos(VITRINE_MAX);
   const categorias = useCategorias();
 
   const primeiroNome = usuario?.nome?.trim().split(' ')[0];
-  const destaques = produtos.data?.items.slice(0, VITRINE_MAX) ?? [];
+  // Ranking de vendas, e nao os ultimos cadastrados: quem manda aqui e o que o
+  // cliente comprou. O servidor completa com os mais novos se faltar venda.
+  const destaques = maisVendidos.data?.items ?? [];
   // Quem escolhe quais aparecem aqui e o admin, na tela "Categorias na Home".
   const vitrines = categorias.data?.items.filter((c) => c.naHome) ?? [];
 

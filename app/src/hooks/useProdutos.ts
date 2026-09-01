@@ -6,6 +6,13 @@ export function useProdutos(filters?: ProdutoFilters) {
   return useQuery({ queryKey: ['produtos', filters], queryFn: () => produtosApi.list(filters) });
 }
 
+export function useMaisVendidos(limite = 8) {
+  return useQuery({
+    queryKey: ['mais-vendidos', limite],
+    queryFn: () => produtosApi.maisVendidos(limite),
+  });
+}
+
 export function useProduto(id: string | undefined) {
   return useQuery({
     queryKey: ['produto', id],

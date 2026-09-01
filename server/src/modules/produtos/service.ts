@@ -74,3 +74,45 @@ export async function setProdutoAtivo(id: string, ativo: boolean) {
   await getProduto(id, { incluirInativo: true });
   return prisma.produto.update({ where: { id }, data: { ativo } });
 }
+
+/**
+ * Os produtos que mais sairam, contando so pedido com pagamento aprovado —
+ * carrinho abandonado e pedido cancelado nao viram venda.
+ *
+ * Quando ainda nao ha venda suficiente pra encher a vitrine, o resto vem dos
+ * cadastrados mais recentes. Loja nova tem zero pedido pago, e um "Destaques"
+ * vazio na entrada da loja e pior que um desatualizado.
+ */
+export async function maisVendidos(limite = 8) {
+  const ranking = await prisma.itemPedido.groupBy({
+    by: ['produtoId'],
+    where: { produtoId: { not: null }, pedido: { statusPagamento: 'PAGO' } },
+    _sum: { quantidade: true },
+    orderBy: { _sum: { quantidade: 'desc' } },
+    take: limite,
+  });
+
+  const ids = ranking.map((linha) => linha.produtoId).filter((id): id is string => !!id);
+
+  // Produto desativado sai da vitrine mesmo tendo vendido bem: nao adianta
+  // mostrar o que o cliente nao pode comprar.
+  const vendidos = ids.length
+    ? await prisma.produto.findMany({ where: { id: { in: ids }, ativo: true }, include })
+    : [];
+
+  // O findMany devolve na ordem do banco, nao na do ranking.
+  const porId = new Map(vendidos.map((produto) => [produto.id, produto]));
+  const items = ids.map((id) => porId.get(id)).filter((p) => !!p);
+
+  if (items.length < limite) {
+    const completar = await prisma.produto.findMany({
+      where: { ativo: true, id: { notIn: items.map((p) => p.id) } },
+      include,
+      orderBy: { createdAt: 'desc' },
+      take: limite - items.length,
+    });
+    items.push(...completar);
+  }
+
+  return { items, total: items.length };
+}
