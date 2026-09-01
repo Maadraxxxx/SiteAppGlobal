@@ -483,9 +483,17 @@ export default function AdminPedidosScreen() {
             if ('vazio' in item) return <View style={styles.preenchimento} />;
 
             // Capa = foto do primeiro item que tiver imagem.
-            const capa = item.itens.find((i) => i.produto?.imagemUrl)?.produto?.imagemUrl;
+            // Mesma regra da lista do cliente: a arte encomendada vem antes da
+            // foto do produto original. Sem isso a miniatura contradiria a
+            // etiqueta de "arte personalizada" logo abaixo.
+            const capa =
+              item.itens.find((i) => i.geracaoImagem?.imagemUrl)?.geracaoImagem?.imagemUrl ??
+              item.itens.find((i) => i.produto?.imagemUrl)?.produto?.imagemUrl;
             const extras = item.itens.length - 1;
             const pecas = item.itens.reduce((s, i) => s + i.quantidade, 0);
+            const personalizados = item.itens
+              .map((i) => i.geracaoImagem?.tema)
+              .filter((tema): tema is string => !!tema);
 
             return (
               <Pressable
@@ -524,6 +532,16 @@ export default function AdminPedidosScreen() {
                       {item.itens[0]?.produto?.nome ?? 'Produto removido'}
                       {pecas > 1 ? ` · ${pecas} peças` : ''}
                     </ThemedText>
+                    {/* Pedido com arte de IA da trabalho diferente na bancada:
+                        precisa aparecer antes de abrir o pedido. Mostra o tema
+                        quando ha um so; com varios, so a contagem. */}
+                    {personalizados.length ? (
+                      <ThemedText type="small" themeColor="primary" numberOfLines={1}>
+                        {personalizados.length === 1
+                          ? `Arte personalizada: ${personalizados[0]}`
+                          : `${personalizados.length} artes personalizadas`}
+                      </ThemedText>
+                    ) : null}
                     <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
                       {item.usuario.nome} · {dataHora(item.createdAt)}
                     </ThemedText>

@@ -117,7 +117,13 @@ export default function PedidosScreen() {
         renderItem={({ item }) => {
           const aguardando = item.statusPagamento === 'AGUARDANDO';
           const podeRastrear = item.statusPagamento === 'PAGO';
-          const capa = item.itens.find((i) => i.produto?.imagemUrl)?.produto?.imagemUrl;
+          // Quando o pedido tem arte personalizada, e ela que vai na capa. Antes
+          // aparecia a foto do produto original, e o cliente que encomendou a
+          // versao de Natal via a peca sem tema — sem saber se o pedido certo
+          // tinha entrado.
+          const capa =
+            item.itens.find((i) => i.geracaoImagem?.imagemUrl)?.geracaoImagem?.imagemUrl ??
+            item.itens.find((i) => i.produto?.imagemUrl)?.produto?.imagemUrl;
 
           return (
             <Pressable
