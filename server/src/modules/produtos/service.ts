@@ -30,7 +30,10 @@ export async function listProdutos(filters: ListProdutosFilters) {
     prisma.produto.findMany({
       where,
       include,
-      orderBy: { createdAt: 'desc' },
+      // O id desempata. Sem ele, dois produtos cadastrados no mesmo instante
+      // podem trocar de lugar entre uma pagina e outra — e na rolagem infinita
+      // isso aparece como item repetido ou item que sumiu.
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),

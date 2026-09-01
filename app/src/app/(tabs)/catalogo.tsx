@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   FlatList,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -22,7 +23,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { estilosHooks, formatosHooks, useCategorias } from '@/hooks/useCatalogo';
 import { useTheme } from '@/hooks/use-theme';
-import { useProdutos } from '@/hooks/useProdutos';
+import { PRODUTOS_POR_LOTE, useProdutosInfinitos } from '@/hooks/useProdutos';
 
 interface TagOption {
   id: string;
@@ -121,7 +122,7 @@ export default function CatalogoScreen() {
   const formatos = formatosHooks.useList();
   const estilos = estilosHooks.useList();
 
-  const produtos = useProdutos({
+  const produtos = useProdutosInfinitos({
     categoria: categoriaSlug,
     formato: formatoSlug,
     estilo: estiloSlug,
@@ -148,8 +149,18 @@ export default function CatalogoScreen() {
     filtrosAtivos.push({ chave: 'estilo', nome: estiloAtivo.nome, limpar: () => setEstiloSlug(undefined) });
   }
 
-  const itens = produtos.data?.items ?? [];
+  // As paginas ja carregadas viram uma lista so pra FlatList.
+  const itens = produtos.data?.pages.flatMap((pagina) => pagina.items) ?? [];
+  // O total vem do servidor: mostrar so o que ja carregou faria o numero
+  // crescer sozinho enquanto a pessoa rola, parecendo defeito.
+  const total = produtos.data?.pages[0]?.total ?? 0;
   const temBusca = search.length > 0;
+
+  function carregarMais() {
+    // O onEndReached dispara varias vezes durante a rolagem; sem esta guarda
+    // sairiam varias buscas da mesma pagina.
+    if (produtos.hasNextPage && !produtos.isFetchingNextPage) produtos.fetchNextPage();
+  }
 
   function limparFiltros() {
     setCategoriaSlug(undefined);
@@ -239,7 +250,7 @@ export default function CatalogoScreen() {
       ) : itens.length ? (
         <>
           <ThemedText type="small" themeColor="textSecondary">
-            {itens.length} {itens.length === 1 ? 'produto' : 'produtos'}
+            {total} {total === 1 ? 'produto' : 'produtos'}
           </ThemedText>
           <FlatList
           showsVerticalScrollIndicator={mostrarBarra}
@@ -252,6 +263,28 @@ export default function CatalogoScreen() {
             renderItem={({ item }) => (
               <ProductCard produto={item} width={itemWidth} onPress={() => router.push(`/produto/${item.id}`)} />
             )}
+            onEndReached={carregarMais}
+            // Meia tela de antecedencia: o lote seguinte chega antes de a
+            // pessoa bater no fim, entao a rolagem nao para pra esperar.
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              produtos.isFetchingNextPage ? (
+                <ActivityIndicator style={styles.carregandoMais} />
+              ) : !produtos.hasNextPage && itens.length > PRODUTOS_POR_LOTE ? (
+                <ThemedText type="small" themeColor="textSecondary" style={styles.fimDaLista}>
+                  Você viu todos os produtos
+                </ThemedText>
+              ) : null
+            }
+            // Segurar so o que esta perto da tela. O padrao do windowSize (21)
+            // mantem dez telas montadas pra cada lado — memoria e trabalho de
+            // layout que ninguem ve.
+            initialNumToRender={12}
+            maxToRenderPerBatch={8}
+            updateCellsBatchingPeriod={50}
+            windowSize={5}
+            // Na web isso deixa buraco branco no lugar do card ao rolar rapido.
+            removeClippedSubviews={Platform.OS !== 'web'}
           />
         </>
       ) : (
@@ -414,6 +447,13 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingBottom: Spacing.three,
+  },
+  carregandoMais: {
+    paddingVertical: Spacing.four,
+  },
+  fimDaLista: {
+    textAlign: 'center',
+    paddingVertical: Spacing.four,
   },
   loading: {
     marginTop: Spacing.six,

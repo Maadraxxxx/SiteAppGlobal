@@ -7,6 +7,7 @@ export interface ProdutoFilters {
   estilo?: string;
   search?: string;
   page?: number;
+  pageSize?: number;
 }
 
 function toQuery(filters: ProdutoFilters = {}) {
@@ -16,6 +17,7 @@ function toQuery(filters: ProdutoFilters = {}) {
   if (filters.estilo) params.set('estilo', filters.estilo);
   if (filters.search) params.set('search', filters.search);
   if (filters.page) params.set('page', String(filters.page));
+  if (filters.pageSize) params.set('pageSize', String(filters.pageSize));
   const query = params.toString();
   return query ? `?${query}` : '';
 }
