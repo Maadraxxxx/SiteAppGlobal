@@ -15,6 +15,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { iaApi } from '@/api/ia';
 import { produtosApi } from '@/api/produtos';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
@@ -43,6 +44,10 @@ interface Props {
 }
 
 export function TemaChatModal({ visible, onClose, produto }: Props) {
+  // O Modal ocupa a tela inteira, inclusive a faixa do relogio e da bateria e a
+  // do indicador de inicio. Sem estas margens o cabecalho fica por baixo delas
+  // no iPhone.
+  const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { addItem } = useCart();
 
@@ -160,7 +165,7 @@ export function TemaChatModal({ visible, onClose, produto }: Props) {
       <KeyboardAvoidingView
         style={[styles.flex, { backgroundColor: theme.background }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={[styles.header, { borderColor: theme.border }]}>
+        <View style={[styles.header, { borderColor: theme.border, paddingTop: insets.top + Spacing.four }]}>
           <View style={styles.headerTexto}>
             <ThemedText type="smallBold">Personalizar com IA</ThemedText>
             {saldo ? (
@@ -280,7 +285,11 @@ export function TemaChatModal({ visible, onClose, produto }: Props) {
           </Pressable>
         ) : null}
 
-        <View style={[styles.inputRow, { borderColor: theme.border }]}>
+        <View
+          style={[
+            styles.inputRow,
+            { borderColor: theme.border, paddingBottom: insets.bottom + Spacing.three },
+          ]}>
           <TextInput
             value={input}
             onChangeText={setInput}
