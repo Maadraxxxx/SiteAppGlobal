@@ -43,9 +43,23 @@ const queryClient = new QueryClient({
  * 13 pra cima; no Android e a mesma flag que os apps de banco usam, que alem de
  * bloquear o print deixa a miniatura em branco na lista de apps abertos.
  */
+/**
+ * Desligado a pedido do Gabriel enquanto ele testa o app — com o bloqueio
+ * ligado ele nao consegue tirar print pra mostrar o que esta vendo. Pra voltar
+ * a proteger, troque pra true: nao ha mais nada a mexer.
+ */
+const BLOQUEAR_PRINT = false;
+
 function useBloquearPrint() {
   useEffect(() => {
     if (Platform.OS === 'web') return;
+
+    if (!BLOQUEAR_PRINT) {
+      // Libera de propósito: a trava vale enquanto o app está aberto, e sem
+      // isto ela continuaria de pé numa sessão que começou com ela ligada.
+      ScreenCapture.allowScreenCaptureAsync().catch(() => {});
+      return;
+    }
 
     // Aparelho sem suporte: nao ha alternativa, e derrubar a abertura do app
     // por causa disso seria pior que permitir o print.
