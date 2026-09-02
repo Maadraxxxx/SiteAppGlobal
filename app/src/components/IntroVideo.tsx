@@ -7,7 +7,8 @@ import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { ThemedText } from './themed-text';
 
-const VIDEO = require('@/assets/video/intro.mp4');
+/** Abertura que vai dentro do app, usada quando o admin nao escolheu outra. */
+const VIDEO_EMBUTIDO = require('@/assets/video/intro.mp4');
 
 /** Rede ruim ou codec sem suporte: some sozinho em vez de prender o cliente na porta. */
 const LIMITE_CARREGANDO_MS = 15000;
@@ -53,7 +54,7 @@ function marcarParaTocarEmbutido(video: HTMLVideoElement) {
   video.style.objectFit = 'contain';
 }
 
-export function IntroVideo({ onFim }: { onFim: () => void }) {
+export function IntroVideo({ onFim, videoUrl }: { onFim: () => void; videoUrl?: string | null }) {
   const [fase, setFase] = useState<Fase>('carregando');
   const [saindo, setSaindo] = useState(false);
   const containerRef = useRef<View>(null);
@@ -62,7 +63,11 @@ export function IntroVideo({ onFim }: { onFim: () => void }) {
   const jaSaiu = useRef(false);
   const limite = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const player = useVideoPlayer(VIDEO, (player) => {
+  // O admin pode trocar a abertura pelo painel. Enquanto ele nao troca — ou se
+  // a configuracao nao carregar — vale a que vem dentro do app.
+  const fonte = videoUrl ? { uri: videoUrl } : VIDEO_EMBUTIDO;
+
+  const player = useVideoPlayer(fonte, (player) => {
     player.loop = false;
     // No navegador, autoplay com som é bloqueado — mudo é a única forma de a
     // abertura tocar sozinha. No app essa regra não existe, então lá ela sai

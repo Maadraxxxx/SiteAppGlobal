@@ -193,6 +193,12 @@ export default function AdminDashboard() {
         <View style={styles.atalho}>
           <Button title="Categorias" variant="ghost" onPress={() => router.push(ROTAS.adminCategorias)} />
         </View>
+        <View style={styles.atalho}>
+          <Button title="Abertura" variant="ghost" onPress={() => router.push(ROTAS.adminAbertura)} />
+        </View>
+        <View style={styles.atalho}>
+          <Button title="Pessoas" variant="ghost" onPress={() => router.push(ROTAS.adminUsuarios)} />
+        </View>
       </View>
 
       <View style={styles.grupo}>

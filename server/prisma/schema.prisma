@@ -356,3 +356,22 @@ model Pagamento {
 
   @@map("pagamentos")
 }
+
+/// Ajustes da loja que o admin muda pelo painel, sem mexer em codigo. Linha
+/// unica: sao poucos e globais, e uma tabela chave-valor exigiria adivinhar o
+/// tipo de cada um na leitura.
+model ConfiguracaoApp {
+  /// Sempre "unica" — a tabela tem uma linha so.
+  id String @id @default("unica")
+
+  /// Video de abertura escolhido pelo admin. Nulo usa o que vem embutido no
+  /// app.
+  introVideoUrl String?
+
+  /// Desligado, o app abre direto na Home, sem abertura nenhuma.
+  introVideoAtivo Boolean @default(true)
+
+  updatedAt DateTime @updatedAt
+
+  @@map("configuracao_app")
+}

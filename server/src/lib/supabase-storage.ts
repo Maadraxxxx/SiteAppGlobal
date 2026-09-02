@@ -69,3 +69,43 @@ export async function uploadProdutoImagem(
 
   return `${env.SUPA_URL}/storage/v1/object/public/${BUCKET}/${path}`;
 }
+
+/**
+ * Pede pro Supabase uma URL de envio assinada, pra o arquivo ir do aparelho do
+ * admin direto pro armazenamento.
+ *
+ * Vale a pena pelo tamanho: funcao serverless na Vercel corta o corpo da
+ * requisicao em poucos megabytes, e video estoura isso facil. Passando por
+ * fora, o limite deixa de existir — o servidor so autoriza e diz onde gravar.
+ */
+export async function criarUrlDeEnvio(filename: string) {
+  assertConfigured();
+  await ensureBucket();
+
+  const ext = filename.includes('.') ? filename.split('.').pop() : 'mp4';
+  const path = `${randomUUID()}.${ext}`;
+
+  const res = await fetch(`${env.SUPA_URL}/storage/v1/object/upload/sign/${BUCKET}/${path}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.SUPA_SERVICE_ROLE_KEY}`,
+      apikey: env.SUPA_SERVICE_ROLE_KEY as string,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Falha ao autorizar envio: ${res.status} ${text}`);
+  }
+
+  // A resposta traz o caminho ja com o token na query.
+  const { url } = (await res.json()) as { url: string };
+
+  return {
+    /** Pra onde o app envia o arquivo (PUT). */
+    urlDeEnvio: `${env.SUPA_URL}/storage/v1${url.startsWith('/') ? url : `/${url}`}`,
+    /** Endereco final e publico, o que fica salvo na configuracao. */
+    urlPublica: `${env.SUPA_URL}/storage/v1/object/public/${BUCKET}/${path}`,
+  };
+}

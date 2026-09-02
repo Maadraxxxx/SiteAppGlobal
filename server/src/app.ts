@@ -8,6 +8,7 @@ import { HttpError } from './lib/http-error';
 import authRoutes from './modules/auth/routes';
 import bannersRoutes from './modules/banners/routes';
 import categoriasRoutes from './modules/categorias/routes';
+import configuracoesRoutes from './modules/configuracoes/routes';
 import enderecosRoutes from './modules/enderecos/routes';
 import envioRoutes from './modules/envio/routes';
 import estilosRoutes from './modules/estilos/routes';
@@ -18,6 +19,7 @@ import pagamentosRoutes from './modules/pagamentos/routes';
 import pedidosRoutes from './modules/pedidos/routes';
 import produtosRoutes from './modules/produtos/routes';
 import uploadsRoutes from './modules/uploads/routes';
+import usuariosRoutes from './modules/usuarios/routes';
 
 export function buildApp() {
   // bodyLimit padrao do Fastify e 1MB pra qualquer requisicao — precisa ser
@@ -66,6 +68,7 @@ export function buildApp() {
       api.register(authRoutes, { prefix: '/auth' });
       api.register(bannersRoutes);
       api.register(categoriasRoutes);
+      api.register(configuracoesRoutes);
       api.register(formatosRoutes);
       api.register(enderecosRoutes);
       api.register(envioRoutes);
@@ -76,6 +79,7 @@ export function buildApp() {
       api.register(pedidosRoutes);
       api.register(produtosRoutes);
       api.register(uploadsRoutes);
+      api.register(usuariosRoutes);
     },
     { prefix: '/api' },
   );

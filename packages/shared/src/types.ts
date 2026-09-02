@@ -29,6 +29,24 @@ export interface Categoria {
   naHome: boolean;
 }
 
+/** Ajustes da loja que o admin muda pelo painel. */
+export interface ConfiguracaoApp {
+  /** Vídeo de abertura escolhido pelo admin. Nulo usa o embutido no app. */
+  introVideoUrl: string | null;
+  /** Desligado, o app abre direto na Home. */
+  introVideoAtivo: boolean;
+}
+
+/** Pessoa cadastrada, como o painel do admin a enxerga — nunca traz senha. */
+export interface UsuarioAdmin {
+  id: string;
+  nome: string;
+  email: string;
+  role: Role;
+  avatarUrl?: string | null;
+  createdAt: string;
+}
+
 export interface Produto {
   id: string;
   nome: string;

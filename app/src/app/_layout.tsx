@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { BotaoVoltar } from '@/components/BotaoVoltar';
 import { IntroVideo } from '@/components/IntroVideo';
+import { useConfiguracao } from '@/hooks/useConfiguracao';
 import { CABECALHO } from '@/constants/cabecalho';
 import { Colors } from '@/constants/theme';
 import { AuthProvider } from '@/context/AuthContext';
@@ -54,6 +55,29 @@ function useBloquearPrint() {
       ScreenCapture.allowScreenCaptureAsync().catch(() => {});
     };
   }, []);
+}
+
+/**
+ * Decide se a abertura toca e com qual video — o admin controla os dois pelo
+ * painel. Fica num componente proprio porque precisa do QueryClientProvider,
+ * que so existe dentro do RootLayout.
+ */
+function Abertura({ onFim }: { onFim: () => void }) {
+  const { data, isLoading } = useConfiguracao();
+  const desligada = !!data && !data.configuracao.introVideoAtivo;
+
+  useEffect(() => {
+    if (desligada) onFim();
+  }, [desligada, onFim]);
+
+  // Enquanto a configuracao nao chega, nada aparece: tocar o video e so depois
+  // descobrir que ele esta desligado seria pior que o instante de espera. A
+  // tela de abertura do sistema ainda esta por cima nesse momento.
+  if (isLoading || desligada) return null;
+
+  // Sem configuracao (servidor fora do ar, aparelho sem rede) cai no video
+  // embutido, em vez de deixar o cliente sem abertura nenhuma.
+  return <IntroVideo onFim={onFim} videoUrl={data?.configuracao.introVideoUrl} />;
 }
 
 export default function RootLayout() {
@@ -120,7 +144,7 @@ export default function RootLayout() {
 
             {/* Por cima de tudo, some sozinho quando o vídeo acaba. Fica dentro
                 dos providers pra o app já estar montado por trás quando sair. */}
-            {mostrandoIntro ? <IntroVideo onFim={() => setMostrandoIntro(false)} /> : null}
+            {mostrandoIntro ? <Abertura onFim={() => setMostrandoIntro(false)} /> : null}
           </ThemeProvider>
           </PagamentoProvider>
         </CartProvider>

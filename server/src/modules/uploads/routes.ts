@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { authenticate, requireAdmin } from '../../middleware/auth';
 import { badRequest } from '../../lib/http-error';
-import { uploadProdutoImagem } from '../../lib/supabase-storage';
+import { criarUrlDeEnvio, uploadProdutoImagem } from '../../lib/supabase-storage';
 
 const TIPOS_PERMITIDOS = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
@@ -25,6 +25,19 @@ export default async function uploadsRoutes(app: FastifyInstance) {
 
         const url = await uploadProdutoImagem(buffer, file.filename, file.mimetype);
         return reply.code(201).send({ url });
+      });
+
+      /**
+       * Autoriza um envio direto pro armazenamento, sem o arquivo passar por
+       * aqui. Usado pelo video de abertura: funcao serverless corta o corpo da
+       * requisicao em poucos megabytes, e video estoura isso facil.
+       */
+      adminScope.post('/url-de-envio', async (request, reply) => {
+        const { filename } = (request.body ?? {}) as { filename?: string };
+        if (!filename) throw badRequest('Informe o nome do arquivo');
+
+        const enderecos = await criarUrlDeEnvio(filename);
+        return reply.code(201).send(enderecos);
       });
     },
     { prefix: '/admin/uploads' },
