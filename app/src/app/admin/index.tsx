@@ -3,7 +3,6 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Fragment } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
-import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { TagProducao } from '@/components/StatusPedidoTag';
 import { ThemedText } from '@/components/themed-text';
@@ -56,6 +55,39 @@ function SectionTitle({ titulo, acao }: { titulo: string; acao?: { label: string
         </Pressable>
       ) : null}
     </View>
+  );
+}
+
+/**
+ * Atalho do painel. Pastilha do tamanho do proprio texto, que quebra pra linha
+ * de baixo quando nao cabe — sao cinco, e dividir a largura da tela entre eles
+ * espremia cada rotulo a ponto de "Produtos" sair uma letra por linha no
+ * celular. Pelo mesmo motivo nao usa o <Button> comum: os 24px de recuo dele
+ * roubam justamente o espaco do texto.
+ */
+function Atalho({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.atalho,
+        { borderColor: theme.border, backgroundColor: theme.backgroundElement, opacity: pressed ? 0.6 : 1 },
+      ]}>
+      <Ionicons name={icon} size={16} color={theme.primary} />
+      <ThemedText type="smallBold" themeColor="primary" numberOfLines={1}>
+        {label}
+      </ThemedText>
+    </Pressable>
   );
 }
 
@@ -184,21 +216,11 @@ export default function AdminDashboard() {
           a que pertencem. Aqui ficam os destinos que não têm número próprio —
           e "Produtos", que é por onde se edita o que já existe. */}
       <View style={styles.atalhos}>
-        <View style={styles.atalho}>
-          <Button title="Produtos" variant="ghost" onPress={() => router.push(ROTAS.adminProdutos)} />
-        </View>
-        <View style={styles.atalho}>
-          <Button title="Carrossel" variant="ghost" onPress={() => router.push(ROTAS.adminCarrossel)} />
-        </View>
-        <View style={styles.atalho}>
-          <Button title="Categorias" variant="ghost" onPress={() => router.push(ROTAS.adminCategorias)} />
-        </View>
-        <View style={styles.atalho}>
-          <Button title="Abertura" variant="ghost" onPress={() => router.push(ROTAS.adminAbertura)} />
-        </View>
-        <View style={styles.atalho}>
-          <Button title="Pessoas" variant="ghost" onPress={() => router.push(ROTAS.adminUsuarios)} />
-        </View>
+        <Atalho icon="cube-outline" label="Produtos" onPress={() => router.push(ROTAS.adminProdutos)} />
+        <Atalho icon="images-outline" label="Carrossel" onPress={() => router.push(ROTAS.adminCarrossel)} />
+        <Atalho icon="pricetags-outline" label="Categorias" onPress={() => router.push(ROTAS.adminCategorias)} />
+        <Atalho icon="film-outline" label="Abertura" onPress={() => router.push(ROTAS.adminAbertura)} />
+        <Atalho icon="people-outline" label="Pessoas" onPress={() => router.push(ROTAS.adminUsuarios)} />
       </View>
 
       <View style={styles.grupo}>
@@ -330,10 +352,21 @@ const styles = StyleSheet.create({
   },
   atalhos: {
     flexDirection: 'row',
+    // Quebra em vez de espremer: com cinco atalhos numa linha so, cada rotulo
+    // ficava com menos de 20px de largura util.
+    flexWrap: 'wrap',
     gap: Spacing.two,
   },
   atalho: {
-    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    // Recuo curto de proposito: com o de 16px cabiam so dois por linha no
+    // celular, e os cinco atalhos ocupavam tres linhas no meio do painel.
+    gap: Spacing.one,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.two,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
   },
   statAcao: {
     alignItems: 'center',
