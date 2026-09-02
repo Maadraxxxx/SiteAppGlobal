@@ -1,11 +1,13 @@
-import type { UsuarioAdmin } from '@global-decora/shared';
+import type { Role, UsuarioAdmin } from '@global-decora/shared';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Button } from '@/components/Button';
 import { Screen, useMostrarBarraDeRolagem } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { confirmacaoEscrita, PALAVRA_CONFIRMAR } from '@/lib/confirmacao';
 import { useDefinirRole, useUsuarios } from '@/hooks/useConfiguracao';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -72,6 +74,9 @@ export default function AdminUsuariosScreen() {
   const [filtro, setFiltro] = useState('');
   const [mexendoEm, setMexendoEm] = useState<string>();
   const [error, setError] = useState<string>();
+  // Quem esta prestes a virar admin, e o que foi digitado pra confirmar.
+  const [promovendo, setPromovendo] = useState<UsuarioAdmin | null>(null);
+  const [escrito, setEscrito] = useState('');
   const { usuario: eu } = useAuth();
   const theme = useTheme();
   const mostrarBarra = useMostrarBarraDeRolagem();
@@ -87,20 +92,32 @@ export default function AdminUsuariosScreen() {
   const usuarios = data?.items ?? [];
   const admins = usuarios.filter((u) => u.role === 'ADMIN').length;
 
-  async function alternar(usuario: UsuarioAdmin) {
+  function alternar(usuario: UsuarioAdmin) {
+    setError(undefined);
+
+    // Dar acesso de admin abre o painel inteiro — pedidos, dinheiro, cargos.
+    // Um toque sem querer na lista nao pode bastar.
+    if (usuario.role === 'CLIENTE') {
+      setEscrito('');
+      setPromovendo(usuario);
+      return;
+    }
+
+    void aplicar(usuario, 'CLIENTE');
+  }
+
+  async function aplicar(usuario: UsuarioAdmin, role: Role) {
     setError(undefined);
     setMexendoEm(usuario.id);
     try {
-      await definir.mutateAsync({
-        id: usuario.id,
-        role: usuario.role === 'ADMIN' ? 'CLIENTE' : 'ADMIN',
-      });
+      await definir.mutateAsync({ id: usuario.id, role });
     } catch (err) {
       // As recusas do servidor (último admin, rebaixar a si mesmo) chegam aqui
       // já escritas pra pessoa ler.
       setError(err instanceof Error ? err.message : 'Não deu para mudar o cargo');
     } finally {
       setMexendoEm(undefined);
+      setPromovendo(null);
     }
   }
 
@@ -162,6 +179,66 @@ export default function AdminUsuariosScreen() {
           </ThemedText>
         </View>
       )}
+
+      <Modal
+        visible={!!promovendo}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPromovendo(null)}>
+        <View style={styles.fundo}>
+          <View style={[styles.caixa, { backgroundColor: theme.background }]}>
+            <View style={[styles.selo, { backgroundColor: theme.primary }]}>
+              <Ionicons name="shield-checkmark" size={22} color={theme.primaryText} />
+            </View>
+
+            <ThemedText type="subtitle" style={styles.centralizado}>
+              Dar acesso de administrador
+            </ThemedText>
+
+            <ThemedText type="small" themeColor="textSecondary" style={styles.centralizado}>
+              <ThemedText type="smallBold">{promovendo?.nome}</ThemedText> vai poder ver todos os
+              pedidos e o financeiro, mexer nos produtos e mudar o cargo de outras pessoas.
+            </ThemedText>
+
+            <View style={styles.campo}>
+              <ThemedText type="small" themeColor="textSecondary">
+                Para continuar, escreva{' '}
+                <ThemedText type="smallBold" themeColor="primary">
+                  {PALAVRA_CONFIRMAR}
+                </ThemedText>
+              </ThemedText>
+              <TextInput
+                value={escrito}
+                onChangeText={setEscrito}
+                placeholder={PALAVRA_CONFIRMAR}
+                placeholderTextColor={theme.textSecondary}
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={[
+                  styles.campoInput,
+                  { color: theme.text, borderColor: theme.border, fontFamily: Fonts.sans },
+                ]}
+              />
+            </View>
+
+            <View style={styles.acoes}>
+              <View style={styles.acao}>
+                <Button title="Cancelar" variant="ghost" onPress={() => setPromovendo(null)} />
+              </View>
+              <View style={styles.acao}>
+                <Button
+                  title="Dar acesso"
+                  onPress={() => promovendo && aplicar(promovendo, 'ADMIN')}
+                  // Só habilita com a palavra escrita: o botão desligado é o que
+                  // mostra que a confirmação ainda falta.
+                  disabled={!confirmacaoEscrita(escrito) || !!mexendoEm}
+                  loading={!!mexendoEm}
+                />
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
@@ -225,6 +302,50 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   erroTexto: {
+    flex: 1,
+  },
+  fundo: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.four,
+  },
+  caixa: {
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+    gap: Spacing.three,
+    padding: Spacing.four,
+    borderRadius: Radius.large,
+  },
+  selo: {
+    width: 48,
+    height: 48,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centralizado: {
+    textAlign: 'center',
+  },
+  campo: {
+    width: '100%',
+    gap: Spacing.two,
+  },
+  campoInput: {
+    height: 44,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Radius.small,
+    borderWidth: 1,
+    fontSize: 14,
+  },
+  acoes: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+    width: '100%',
+  },
+  acao: {
     flex: 1,
   },
   vazio: {
