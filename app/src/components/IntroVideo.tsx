@@ -262,7 +262,7 @@ export function IntroVideo({ onFim, videoUrl }: { onFim: () => void; videoUrl?: 
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     // Cor da marca em vez de preto: é o que aparece enquanto o vídeo carrega.
     backgroundColor: Colors.light.primary,
     zIndex: 100,
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   // O empilhamento e todo explicito: no CSS um elemento posicionado pinta
   // acima de um estatico, entao sem zIndex a logo de fundo cobria o video.
   fundo: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 0,
@@ -280,11 +280,11 @@ const styles = StyleSheet.create({
     aspectRatio: 16 / 9,
   },
   video: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1,
   },
   convite: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.four,
