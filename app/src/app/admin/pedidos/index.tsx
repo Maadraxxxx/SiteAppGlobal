@@ -199,7 +199,7 @@ function LinhaDeFiltro<T extends string>({
 }
 
 export default function AdminPedidosScreen() {
-  const { abrir } = useLocalSearchParams<{ abrir?: string }>();
+  const { abrir, pagamento } = useLocalSearchParams<{ abrir?: string; pagamento?: string }>();
   const { data, isLoading, refetch: recarregar } = useAdminPedidos();
   const atualizar = useAtualizarStatusPedido();
   const [aberto, setAberto] = useState<Pedido | null>(null);
@@ -210,8 +210,14 @@ export default function AdminPedidosScreen() {
   const [termo, setTermo] = useState('');
   // A tela abre já na fila de trabalho do dia — pago e ainda não produzido —
   // que é o que o admin vem ver na maioria das vezes. "Limpar" mostra todos.
-  const [filtroPagamento, setFiltroPagamento] = useState<StatusPagamentoPedido | null>('PAGO');
-  const [filtroProducao, setFiltroProducao] = useState<StatusProducao | null>('AGUARDANDO');
+  // Chegando do financeiro, a tela ja abre no recorte que a pessoa clicou —
+  // ela veio de "a receber", nao dos pedidos pagos que sao o padrao daqui.
+  const [filtroPagamento, setFiltroPagamento] = useState<StatusPagamentoPedido | null>(
+    pagamento === 'AGUARDANDO' ? 'AGUARDANDO' : 'PAGO',
+  );
+  const [filtroProducao, setFiltroProducao] = useState<StatusProducao | null>(
+    pagamento === 'AGUARDANDO' ? null : 'AGUARDANDO',
+  );
   const [ordem, setOrdem] = useState<'recentes' | 'valor'>('recentes');
   const theme = useTheme();
   const mostrarBarra = useMostrarBarraDeRolagem();

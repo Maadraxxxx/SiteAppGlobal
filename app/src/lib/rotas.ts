@@ -16,6 +16,8 @@ export const ROTAS = {
   enderecos: '/enderecos' as Href,
   adminPedidos: '/admin/pedidos' as Href,
   adminFinanceiro: '/admin/financeiro' as Href,
+  /** Lista de pedidos ja filtrada nos que aguardam pagamento. */
+  adminPedidosAguardando: '/admin/pedidos?pagamento=AGUARDANDO' as Href,
   /** Abre a lista de pedidos já com aquele pedido aberto. */
   adminPedido: (pedidoId: string) => `/admin/pedidos?abrir=${pedidoId}` as Href,
   adminProdutos: '/admin/produtos' as Href,
