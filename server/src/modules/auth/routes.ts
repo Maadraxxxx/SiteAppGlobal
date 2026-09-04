@@ -47,7 +47,13 @@ export default async function authRoutes(app: FastifyInstance) {
     } catch (erro) {
       // Falha de envio fica no log do servidor: contar ao cliente que "o
       // e-mail nao saiu" tambem revelaria que a conta existe.
-      request.log.error({ erro }, 'Falha ao enviar e-mail de recuperacao');
+      //
+      // A mensagem vai extraida, e nao o objeto: o logger serializa Error como
+      // {} e o motivo da falha se perdia justamente quando era preciso.
+      request.log.error(
+        { motivo: erro instanceof Error ? erro.message : String(erro) },
+        'Falha ao enviar e-mail de recuperacao',
+      );
     }
 
     return reply.send({
