@@ -324,11 +324,6 @@ export default function FinanceiroScreen() {
 
   return (
     <Screen maxWidth={900} style={styles.tela}>
-      <ThemedText type="small" themeColor="textSecondary">
-        Os valores consideram apenas pedidos com pagamento confirmado. As duas exceções estão
-        identificadas no bloco de indicadores.
-      </ThemedText>
-
       <Destaque painel={p} />
 
       <Secao titulo="Receita por mês" legenda="Toque em um mês para ver os números dele.">
