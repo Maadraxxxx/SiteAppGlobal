@@ -47,6 +47,30 @@ export interface UsuarioAdmin {
   createdAt: string;
 }
 
+export type StatusChamado = 'ABERTO' | 'RESPONDIDO' | 'RESOLVIDO';
+export type AutorMensagem = 'CLIENTE' | 'LOJA';
+
+export interface MensagemChamado {
+  id: string;
+  autor: AutorMensagem;
+  texto: string;
+  createdAt: string;
+}
+
+/** Uma conversa de suporte entre o cliente e a loja. */
+export interface Chamado {
+  id: string;
+  assunto: string;
+  status: StatusChamado;
+  /** Pedido a que o chamado se refere, quando o cliente anexou um. */
+  pedidoId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  usuario: { id: string; nome: string; email: string };
+  mensagens: MensagemChamado[];
+  _count: { mensagens: number };
+}
+
 export interface Produto {
   id: string;
   nome: string;

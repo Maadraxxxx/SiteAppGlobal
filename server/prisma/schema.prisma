@@ -82,8 +82,64 @@ model Usuario {
   geracoesIA       GeracaoImagem[]
   comprasCreditoIA CompraCreditoIA[]
   tokensSenha      TokenSenha[]
+  chamados         Chamado[]
 
   @@map("usuarios")
+}
+
+/// Onde o chamado esta na fila da loja.
+enum StatusChamado {
+  /// A bola esta com a loja.
+  ABERTO
+  /// A loja respondeu e espera o cliente.
+  RESPONDIDO
+  /// Encerrado pelo admin.
+  RESOLVIDO
+}
+
+/// Quem escreveu a mensagem. Nao guarda o id de quem respondeu pela loja: pro
+/// cliente e a loja que responde, e trocar de atendente nao muda isso.
+enum AutorMensagem {
+  CLIENTE
+  LOJA
+}
+
+/// Uma conversa de suporte entre o cliente e a loja.
+model Chamado {
+  id        String  @id @default(uuid())
+  usuarioId String
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  assunto String
+  status  StatusChamado @default(ABERTO)
+
+  /// A maioria dos problemas e sobre um pedido. Opcional porque duvida de
+  /// produto ou de entrega ainda nao virou pedido nenhum.
+  pedidoId String?
+  pedido   Pedido? @relation(fields: [pedidoId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  mensagens MensagemChamado[]
+
+  @@index([usuarioId])
+  @@index([status])
+  @@map("chamados")
+}
+
+model MensagemChamado {
+  id        String  @id @default(uuid())
+  chamadoId String
+  chamado   Chamado @relation(fields: [chamadoId], references: [id], onDelete: Cascade)
+
+  autor AutorMensagem
+  texto String
+
+  createdAt DateTime @default(now())
+
+  @@index([chamadoId])
+  @@map("mensagens_chamado")
 }
 
 /// Pedido de "esqueci minha senha" em aberto.
@@ -332,6 +388,7 @@ model Pedido {
 
   itens      ItemPedido[]
   pagamentos Pagamento[]
+  chamados   Chamado[]
 
   @@map("pedidos")
 }

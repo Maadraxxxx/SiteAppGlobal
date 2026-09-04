@@ -8,6 +8,7 @@ import { HttpError } from './lib/http-error';
 import authRoutes from './modules/auth/routes';
 import bannersRoutes from './modules/banners/routes';
 import categoriasRoutes from './modules/categorias/routes';
+import chamadosRoutes from './modules/chamados/routes';
 import configuracoesRoutes from './modules/configuracoes/routes';
 import enderecosRoutes from './modules/enderecos/routes';
 import envioRoutes from './modules/envio/routes';
@@ -68,6 +69,7 @@ export function buildApp() {
       api.register(authRoutes, { prefix: '/auth' });
       api.register(bannersRoutes);
       api.register(categoriasRoutes);
+      api.register(chamadosRoutes);
       api.register(configuracoesRoutes);
       api.register(formatosRoutes);
       api.register(enderecosRoutes);

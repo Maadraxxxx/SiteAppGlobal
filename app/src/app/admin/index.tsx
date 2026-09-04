@@ -8,6 +8,7 @@ import { TagProducao } from '@/components/StatusPedidoTag';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { ROTAS } from '@/lib/rotas';
+import { useChamadosAdmin } from '@/hooks/useChamados';
 import { useAdminPedidos, useResumoPedidosMes } from '@/hooks/usePedidos';
 import { useAdminProdutos } from '@/hooks/useProdutos';
 import { useTheme } from '@/hooks/use-theme';
@@ -147,6 +148,10 @@ export default function AdminDashboard() {
   const produtos = useAdminProdutos();
   const pedidos = useResumoPedidosMes();
   const listaPedidos = useAdminPedidos();
+  // So a contagem interessa aqui: o numero no atalho e o que faz o admin
+  // perceber que tem cliente esperando sem precisar entrar.
+  const chamados = useChamadosAdmin('ABERTO');
+  const chamadosAbertos = chamados.data?.abertos ?? 0;
 
   const itens = produtos.data?.items ?? [];
   const totalProdutos = produtos.data?.total ?? 0;
@@ -221,6 +226,11 @@ export default function AdminDashboard() {
         <Atalho icon="pricetags-outline" label="Categorias" onPress={() => router.push(ROTAS.adminCategorias)} />
         <Atalho icon="film-outline" label="Abertura" onPress={() => router.push(ROTAS.adminAbertura)} />
         <Atalho icon="people-outline" label="Cargo" onPress={() => router.push(ROTAS.adminUsuarios)} />
+        <Atalho
+          icon="chatbubbles-outline"
+          label={chamadosAbertos ? `Suporte (${chamadosAbertos})` : 'Suporte'}
+          onPress={() => router.push(ROTAS.adminChamados)}
+        />
       </View>
 
       <View style={styles.grupo}>

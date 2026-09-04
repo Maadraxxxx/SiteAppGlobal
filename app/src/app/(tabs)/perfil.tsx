@@ -183,6 +183,12 @@ export default function PerfilScreen() {
           descricao="Nome, e-mail e senha"
           onPress={() => router.push('/editar-perfil')}
         />
+        <MenuRow
+          icon="chatbubbles-outline"
+          label="Suporte"
+          descricao="Fale com a loja sobre um pedido ou dúvida"
+          onPress={() => router.push(ROTAS.suporte)}
+        />
       </MenuGroup>
 
       {isAdmin ? (

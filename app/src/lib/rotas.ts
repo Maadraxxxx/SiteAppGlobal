@@ -14,6 +14,11 @@ export const ROTAS = {
   /** Catalogo ja aberto no filtro daquela categoria. */
   catalogoDaCategoria: (slug: string) => `/(tabs)/catalogo?categoria=${slug}` as Href,
   enderecos: '/enderecos' as Href,
+  suporte: '/suporte' as Href,
+  suporteNovo: '/suporte/novo' as Href,
+  chamado: (id: string) => `/suporte/${id}` as Href,
+  adminChamados: '/admin/chamados' as Href,
+  adminChamado: (id: string) => `/admin/chamados/${id}` as Href,
   adminPedidos: '/admin/pedidos' as Href,
   adminFinanceiro: '/admin/financeiro' as Href,
   /** Lista de pedidos ja filtrada nos que aguardam pagamento. */

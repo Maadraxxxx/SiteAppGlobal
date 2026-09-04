@@ -37,6 +37,8 @@ export default function AdminLayout() {
       <Stack.Screen name="categorias" options={{ title: 'Categorias na Home' }} />
       <Stack.Screen name="abertura" options={{ title: 'Abertura do app' }} />
       <Stack.Screen name="usuarios" options={{ title: 'Cargo' }} />
+      <Stack.Screen name="chamados/index" options={{ title: 'Suporte' }} />
+      <Stack.Screen name="chamados/[id]" options={{ title: 'Atendimento' }} />
     </Stack>
   );
 }

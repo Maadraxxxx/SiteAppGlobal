@@ -156,6 +156,12 @@ export default function RootLayout() {
               <Stack.Screen name="pedidos" options={{ headerShown: true, title: 'Meus Pedidos' }} />
               <Stack.Screen name="pedido/[id]" options={{ headerShown: true, title: 'Pedido' }} />
               <Stack.Screen name="enderecos" options={{ headerShown: true, title: 'Meus Endereços' }} />
+              <Stack.Screen name="suporte/index" options={{ headerShown: true, title: 'Suporte' }} />
+              <Stack.Screen
+                name="suporte/novo"
+                options={{ headerShown: true, title: 'Nova solicitação' }}
+              />
+              <Stack.Screen name="suporte/[id]" options={{ headerShown: true, title: 'Atendimento' }} />
               <Stack.Screen name="checkout" options={{ headerShown: true, title: 'Finalizar compra' }} />
               <Stack.Screen name="rastreio/[id]" options={{ headerShown: true, title: 'Rastreamento' }} />
               <Stack.Screen name="pagamento/[id]" options={{ headerShown: true, title: 'Pagamento' }} />
