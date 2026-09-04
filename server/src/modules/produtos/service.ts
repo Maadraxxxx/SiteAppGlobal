@@ -87,35 +87,38 @@ export async function setProdutoAtivo(id: string, ativo: boolean) {
  * vazio na entrada da loja e pior que um desatualizado.
  */
 export async function maisVendidos(limite = 8) {
-  const ranking = await prisma.itemPedido.groupBy({
-    by: ['produtoId'],
-    where: { produtoId: { not: null }, pedido: { statusPagamento: 'PAGO' } },
-    _sum: { quantidade: true },
-    orderBy: { _sum: { quantidade: 'desc' } },
-    take: limite,
-  });
+  // Uma consulta so resolve o ranking inteiro. Antes eram tres, em sequencia:
+  // agrupar as vendas, buscar esses produtos, e completar com os mais novos.
+  // Cada ida ao banco custa uma volta de rede, e isso aparecia na tela inicial.
+  //
+  // O LEFT JOIN faz o produto sem venda entrar com zero, entao a mesma ordem
+  // ja traz o ranking e o preenchimento: quem vendeu mais primeiro, o resto
+  // por data de cadastro. Filtrar `ativo` aqui tambem corrige um detalhe da
+  // versao anterior — la um campeao de vendas desativado ocupava uma vaga do
+  // ranking e sumia depois, encurtando a vitrine.
+  const ordenados = await prisma.$queryRaw<{ id: string }[]>`
+    SELECT p.id
+    FROM produtos p
+    LEFT JOIN (
+      SELECT i."produtoId" AS pid, SUM(i.quantidade) AS qtd
+      FROM itens_do_pedido i
+      JOIN pedidos ped ON ped.id = i."pedidoId"
+      WHERE ped."statusPagamento" = 'PAGO'
+      GROUP BY i."produtoId"
+    ) v ON v.pid = p.id
+    WHERE p.ativo = true
+    ORDER BY COALESCE(v.qtd, 0) DESC, p."createdAt" DESC, p.id DESC
+    LIMIT ${limite}
+  `;
 
-  const ids = ranking.map((linha) => linha.produtoId).filter((id): id is string => !!id);
+  const ids = ordenados.map((linha) => linha.id);
+  if (!ids.length) return { items: [], total: 0 };
 
-  // Produto desativado sai da vitrine mesmo tendo vendido bem: nao adianta
-  // mostrar o que o cliente nao pode comprar.
-  const vendidos = ids.length
-    ? await prisma.produto.findMany({ where: { id: { in: ids }, ativo: true }, include })
-    : [];
+  const produtos = await prisma.produto.findMany({ where: { id: { in: ids } }, include });
 
   // O findMany devolve na ordem do banco, nao na do ranking.
-  const porId = new Map(vendidos.map((produto) => [produto.id, produto]));
+  const porId = new Map(produtos.map((produto) => [produto.id, produto]));
   const items = ids.map((id) => porId.get(id)).filter((p) => !!p);
-
-  if (items.length < limite) {
-    const completar = await prisma.produto.findMany({
-      where: { ativo: true, id: { notIn: items.map((p) => p.id) } },
-      include,
-      orderBy: { createdAt: 'desc' },
-      take: limite - items.length,
-    });
-    items.push(...completar);
-  }
 
   return { items, total: items.length };
 }

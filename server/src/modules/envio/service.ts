@@ -84,7 +84,9 @@ async function descobrirServicoId(pedido: {
   freteServico: string | null;
   itens: { produtoId: string | null; quantidade: number }[];
 }) {
-  const { cotar } = await import('../frete/service');
+  // A extensao .js e exigida pelo moduleResolution node16 e aponta pro arquivo
+  // ja compilado — em desenvolvimento o tsx resolve de volta pro .ts.
+  const { cotar } = await import('../frete/service.js');
   const itens = pedido.itens
     .filter((i): i is { produtoId: string; quantidade: number } => !!i.produtoId)
     .map((i) => ({ produtoId: i.produtoId, quantidade: i.quantidade }));
