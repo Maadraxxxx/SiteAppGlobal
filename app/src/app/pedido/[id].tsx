@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { TagPagamento, TagProducao } from '@/components/StatusPedidoTag';
 import { ThemedText } from '@/components/themed-text';
+import { VisualizadorDeImagem } from '@/components/VisualizadorDeImagem';
 import { Radius, Spacing } from '@/constants/theme';
 import { usePedido } from '@/hooks/usePedidos';
 import { rotuloDoTema } from '@/lib/tema';
@@ -76,7 +78,17 @@ function Linha({
   );
 }
 
+/** Nome do produto e, quando houver, o tema encomendado. */
+function legendaDaArte(item: {
+  produto?: { nome: string } | null;
+  geracaoImagem?: { tema: string } | null;
+}) {
+  const nome = item.produto?.nome ?? 'Produto removido';
+  return item.geracaoImagem ? `${nome} · ${rotuloDoTema(item.geracaoImagem.tema)}` : nome;
+}
+
 export default function PedidoScreen() {
+  const [ampliada, setAmpliada] = useState<{ uri: string; legenda: string } | null>(null);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, isLoading, isError } = usePedido(id);
   const theme = useTheme();
@@ -136,6 +148,12 @@ export default function PedidoScreen() {
         </View>
       ) : null}
 
+      <VisualizadorDeImagem
+        uri={ampliada?.uri}
+        legenda={ampliada?.legenda}
+        onFechar={() => setAmpliada(null)}
+      />
+
       <Bloco titulo="Itens">
         {pedido.itens.map((item, i) => {
           const arte = item.geracaoImagem?.imagemUrl ?? item.produto?.imagemUrl;
@@ -145,15 +163,34 @@ export default function PedidoScreen() {
             <View key={item.id}>
               {i > 0 ? <View style={[styles.divisor, { backgroundColor: theme.border }]} /> : null}
               <View style={styles.item}>
+                {/* A foto abre ampliada; o resto da linha abre o produto. Sao
+                    dois destinos diferentes, e por isso dois toques separados
+                    em vez de um so pra linha inteira. */}
                 {arte ? (
-                  <Image source={{ uri: arte }} style={styles.thumb} contentFit="cover" />
+                  <Pressable
+                    onPress={() => setAmpliada({ uri: arte, legenda: legendaDaArte(item) })}
+                    accessibilityRole="button"
+                    accessibilityLabel="Ver imagem">
+                    <Image source={{ uri: arte }} style={styles.thumb} contentFit="cover" />
+                  </Pressable>
                 ) : (
                   <View style={[styles.thumb, { backgroundColor: theme.secondary }]} />
                 )}
-                <View style={styles.itemTexto}>
-                  <ThemedText type="small" numberOfLines={2}>
-                    {item.produto?.nome ?? 'Produto removido'}
-                  </ThemedText>
+
+                <Pressable
+                  onPress={() => item.produto && router.push(`/produto/${item.produto.id}`)}
+                  // Produto apagado do catalogo nao tem pagina pra abrir.
+                  disabled={!item.produto}
+                  style={({ pressed }) => [styles.itemTexto, { opacity: pressed ? 0.6 : 1 }]}
+                  accessibilityRole={item.produto ? 'button' : undefined}>
+                  <View style={styles.itemNome}>
+                    <ThemedText type="small" numberOfLines={2} style={styles.itemNomeTexto}>
+                      {item.produto?.nome ?? 'Produto removido'}
+                    </ThemedText>
+                    {item.produto ? (
+                      <Ionicons name="chevron-forward" size={14} color={theme.textSecondary} />
+                    ) : null}
+                  </View>
                   {item.geracaoImagem ? (
                     <ThemedText type="small" themeColor="primary" numberOfLines={1}>
                       Arte personalizada: {rotuloDoTema(item.geracaoImagem.tema)}
@@ -162,7 +199,8 @@ export default function PedidoScreen() {
                   <ThemedText type="small" themeColor="textSecondary">
                     {item.quantidade} × {moeda(item.precoUnitario)}
                   </ThemedText>
-                </View>
+                </Pressable>
+
                 <ThemedText type="smallBold">{moeda(total)}</ThemedText>
               </View>
             </View>
@@ -227,6 +265,14 @@ export default function PedidoScreen() {
 }
 
 const styles = StyleSheet.create({
+  itemNome: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  itemNomeTexto: {
+    flexShrink: 1,
+  },
   tela: {
     gap: Spacing.four,
   },
