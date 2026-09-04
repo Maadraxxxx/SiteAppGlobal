@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -8,7 +9,7 @@ import { Screen } from '@/components/Screen';
 import { TagSelector } from '@/components/TagSelector';
 import { TextField } from '@/components/TextField';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import {
   estilosHooks,
   formatosHooks,
@@ -17,9 +18,11 @@ import {
   useRemoveCategoria,
 } from '@/hooks/useCatalogo';
 import { useAdminProduto, useCreateProduto, useUpdateProduto } from '@/hooks/useProdutos';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function AdminProdutoFormScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const theme = useTheme();
   const isNew = id === 'novo';
 
   const { data } = useAdminProduto(isNew ? undefined : id);
@@ -47,6 +50,9 @@ export default function AdminProdutoFormScreen() {
   const [formatoId, setFormatoId] = useState<string>();
   const [estiloId, setEstiloId] = useState<string>();
   const [error, setError] = useState<string>();
+  // Erro por campo: uma frase geral no rodape obriga a pessoa a procurar qual
+  // dos dez campos esta faltando.
+  const [erros, setErros] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const produto = data?.produto;
@@ -71,10 +77,24 @@ export default function AdminProdutoFormScreen() {
 
   async function handleSave() {
     const precoNumero = Number(preco.replace(',', '.'));
-    if (!nome.trim() || !categoriaId || !formatoId || !estiloId || Number.isNaN(precoNumero)) {
-      setError('Preencha nome, preço, categoria, formato e estilo.');
+
+    const faltando: Record<string, string> = {};
+    if (!nome.trim()) faltando.nome = 'Dê um nome ao produto';
+    if (!preco.trim()) faltando.preco = 'Informe o preço';
+    else if (Number.isNaN(precoNumero)) faltando.preco = 'Preço inválido';
+    else if (precoNumero <= 0) faltando.preco = 'O preço precisa ser maior que zero';
+    if (!categoriaId) faltando.categoria = 'Escolha uma categoria';
+    if (!formatoId) faltando.formato = 'Escolha um formato';
+    if (!estiloId) faltando.estilo = 'Escolha um estilo';
+
+    setErros(faltando);
+    // Os tres ids entram na condicao alem da contagem: e o que diz ao
+    // TypeScript que, dali pra baixo, nenhum deles e indefinido.
+    if (Object.keys(faltando).length || !categoriaId || !formatoId || !estiloId) {
+      setError('Faltam campos obrigatórios — eles estão marcados abaixo.');
       return;
     }
+
     setError(undefined);
 
     const input = {
@@ -106,40 +126,104 @@ export default function AdminProdutoFormScreen() {
   const saving = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <Screen style={styles.screen}>
-      <ThemedText type="title">{isNew ? 'Novo produto' : 'Editar produto'}</ThemedText>
+    <Screen maxWidth={720} style={styles.screen}>
+      <View style={styles.topo}>
+        <ThemedText type="title">{isNew ? 'Novo produto' : 'Editar produto'}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          Os campos marcados com{' '}
+          <ThemedText type="smallBold" themeColor="primary">
+            *
+          </ThemedText>{' '}
+          são obrigatórios.
+        </ThemedText>
+      </View>
 
-      <FormSection title="Informações básicas">
-        <TextField label="Nome" value={nome} onChangeText={setNome} />
-        <TextField label="Descrição" value={descricao} onChangeText={setDescricao} multiline />
-        <TextField label="Preço (R$)" value={preco} onChangeText={setPreco} keyboardType="decimal-pad" />
+      <FormSection title="Informações básicas" icone="pricetag-outline">
+        <TextField
+          label="Nome"
+          obrigatorio
+          value={nome}
+          onChangeText={setNome}
+          error={erros.nome}
+          placeholder="Ex: Painel redondo Halloween"
+        />
+        <TextField
+          label="Descrição"
+          value={descricao}
+          onChangeText={setDescricao}
+          multiline
+          hint="Aparece na página do produto, abaixo do preço."
+          placeholder="Material, o que acompanha, detalhes da arte..."
+        />
+        <TextField
+          label="Preço"
+          obrigatorio
+          prefixo="R$"
+          value={preco}
+          onChangeText={setPreco}
+          keyboardType="decimal-pad"
+          error={erros.preco}
+          placeholder="0,00"
+        />
       </FormSection>
 
-      <FormSection title="Dimensões e peso">
-        <View style={styles.dimensionsRow}>
-          <View style={styles.dimensionField}>
+      {/* Dois por linha em vez de tres: com tres, cada campo ficava com pouco
+          mais de cem pixels no celular e o rotulo nao cabia. */}
+      <FormSection
+        title="Dimensões e peso"
+        icone="cube-outline"
+        descricao="É com isso que a transportadora calcula o frete. Sem preencher, o cálculo sai errado.">
+        <View style={styles.medidas}>
+          <View style={styles.medida}>
             <TextField
-              label="Compr. (cm)"
+              label="Comprimento"
+              sufixo="cm"
               value={comprimento}
               onChangeText={setComprimento}
               keyboardType="decimal-pad"
             />
           </View>
-          <View style={styles.dimensionField}>
-            <TextField label="Larg. (cm)" value={largura} onChangeText={setLargura} keyboardType="decimal-pad" />
+          <View style={styles.medida}>
+            <TextField
+              label="Largura"
+              sufixo="cm"
+              value={largura}
+              onChangeText={setLargura}
+              keyboardType="decimal-pad"
+            />
           </View>
-          <View style={styles.dimensionField}>
-            <TextField label="Alt. (cm)" value={altura} onChangeText={setAltura} keyboardType="decimal-pad" />
+          <View style={styles.medida}>
+            <TextField
+              label="Altura"
+              sufixo="cm"
+              value={altura}
+              onChangeText={setAltura}
+              keyboardType="decimal-pad"
+            />
+          </View>
+          <View style={styles.medida}>
+            <TextField
+              label="Peso"
+              sufixo="kg"
+              value={peso}
+              onChangeText={setPeso}
+              keyboardType="decimal-pad"
+            />
           </View>
         </View>
-        <TextField label="Peso (kg)" value={peso} onChangeText={setPeso} keyboardType="decimal-pad" />
       </FormSection>
 
-      <FormSection title="Imagem">
+      <FormSection
+        title="Imagem"
+        icone="image-outline"
+        descricao="É a foto que aparece no catálogo e na tela inicial.">
         <ImageUploadField value={imagemUrl} onChange={setImagemUrl} />
       </FormSection>
 
-      <FormSection title="Classificação">
+      <FormSection
+        title="Classificação"
+        icone="funnel-outline"
+        descricao="É por aqui que o cliente filtra o catálogo.">
         <TagSelector
           label="Categoria"
           genero="f"
@@ -153,6 +237,7 @@ export default function AdminProdutoFormScreen() {
           }}
           creating={createCategoria.isPending}
           onRemove={(id) => removeCategoria.mutateAsync(id)}
+          error={erros.categoria}
         />
 
         <TagSelector
@@ -163,6 +248,7 @@ export default function AdminProdutoFormScreen() {
           onCreate={(nome) => createFormato.mutateAsync(nome)}
           creating={createFormato.isPending}
           onRemove={(id) => removeFormato.mutateAsync(id)}
+          error={erros.formato}
         />
 
         <TagSelector
@@ -173,16 +259,31 @@ export default function AdminProdutoFormScreen() {
           onCreate={(nome) => createEstilo.mutateAsync(nome)}
           creating={createEstilo.isPending}
           onRemove={(id) => removeEstilo.mutateAsync(id)}
+          error={erros.estilo}
         />
       </FormSection>
 
       {error ? (
-        <ThemedText type="small" themeColor="danger">
-          {error}
-        </ThemedText>
+        <View style={[styles.erro, { borderColor: theme.danger }]}>
+          <Ionicons name="alert-circle" size={18} color={theme.danger} />
+          <ThemedText type="small" themeColor="danger" style={styles.erroTexto}>
+            {error}
+          </ThemedText>
+        </View>
       ) : null}
 
-      <Button title="Salvar" onPress={handleSave} loading={saving} />
+      <View style={styles.acoes}>
+        <View style={styles.acaoSecundaria}>
+          <Button title="Cancelar" variant="ghost" onPress={() => router.back()} disabled={saving} />
+        </View>
+        <View style={styles.acaoPrincipal}>
+          <Button
+            title={isNew ? 'Cadastrar produto' : 'Salvar alterações'}
+            onPress={handleSave}
+            loading={saving}
+          />
+        </View>
+      </View>
     </Screen>
   );
 }
@@ -191,11 +292,41 @@ const styles = StyleSheet.create({
   screen: {
     gap: Spacing.four,
   },
-  dimensionsRow: {
+  topo: {
+    gap: Spacing.one,
+  },
+  medidas: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.three,
+  },
+  medida: {
+    // Pede metade da linha e quebra sozinho: dois por linha no celular, os
+    // quatro lado a lado numa tela larga.
+    flexGrow: 1,
+    flexBasis: 130,
+  },
+  erro: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    padding: Spacing.three,
+    borderRadius: Radius.small,
+    borderWidth: 1,
+  },
+  erroTexto: {
+    flex: 1,
+  },
+  acoes: {
     flexDirection: 'row',
     gap: Spacing.two,
   },
-  dimensionField: {
-    flex: 1,
+  acaoSecundaria: {
+    flexGrow: 1,
+    flexBasis: 110,
+  },
+  acaoPrincipal: {
+    flexGrow: 2,
+    flexBasis: 180,
   },
 });

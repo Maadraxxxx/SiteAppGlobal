@@ -24,6 +24,8 @@ interface TagSelectorProps {
   creating?: boolean;
   /** Concorda o "Novo/Nova" com o substantivo do label (categoria e feminino). */
   genero?: 'm' | 'f';
+  /** Vem do formulário quando o salvar barra por falta de escolha. */
+  error?: string;
 }
 
 export function TagSelector({
@@ -35,6 +37,7 @@ export function TagSelector({
   onRemove,
   creating,
   genero = 'm',
+  error: erroExterno,
 }: TagSelectorProps) {
   const [adding, setAdding] = useState(false);
   const [novoNome, setNovoNome] = useState('');
@@ -83,19 +86,32 @@ export function TagSelector({
   return (
     <View style={styles.container}>
       <View style={styles.cabecalho}>
-        <ThemedText type="small" themeColor="textSecondary">
-          {label}
-        </ThemedText>
+        <View style={styles.rotulo}>
+          <ThemedText type="smallBold">{label}</ThemedText>
+          <ThemedText type="small" themeColor="primary">
+            *
+          </ThemedText>
+        </View>
 
+        {/* Ícone em vez de "Excluir" escrito: a palavra solta na ponta da linha
+            parecia apagar a classificação inteira, e não uma das pastilhas. */}
         {podeExcluir ? (
           <Pressable
             onPress={() => {
               setModoExcluir((prev) => !prev);
               setError(undefined);
             }}
-            hitSlop={8}>
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={modoExcluir ? 'Concluir exclusão' : 'Excluir opções'}
+            style={styles.gerenciar}>
+            <Ionicons
+              name={modoExcluir ? 'checkmark' : 'trash-outline'}
+              size={14}
+              color={modoExcluir ? theme.primary : theme.textSecondary}
+            />
             <ThemedText type="small" themeColor={modoExcluir ? 'primary' : 'textSecondary'}>
-              {modoExcluir ? 'Concluir' : 'Excluir'}
+              {modoExcluir ? 'Concluir' : 'Gerenciar'}
             </ThemedText>
           </Pressable>
         ) : null}
@@ -152,9 +168,12 @@ export function TagSelector({
         </View>
       ) : null}
 
-      {error ? (
+      {/* O erro de dentro (criar/excluir falhou) vem antes do de fora (o
+          formulario barrou por falta de escolha): o primeiro e resposta a uma
+          acao que a pessoa acabou de fazer. */}
+      {error || erroExterno ? (
         <ThemedText type="small" themeColor="danger">
-          {error}
+          {error ?? erroExterno}
         </ThemedText>
       ) : null}
     </View>
@@ -162,6 +181,16 @@ export function TagSelector({
 }
 
 const styles = StyleSheet.create({
+  rotulo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.half,
+  },
+  gerenciar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
   container: {
     gap: Spacing.one,
   },
