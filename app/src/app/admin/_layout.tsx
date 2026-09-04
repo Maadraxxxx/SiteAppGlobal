@@ -36,7 +36,7 @@ export default function AdminLayout() {
       <Stack.Screen name="banners/index" options={{ title: 'Carrossel da Home' }} />
       <Stack.Screen name="categorias" options={{ title: 'Categorias na Home' }} />
       <Stack.Screen name="abertura" options={{ title: 'Abertura do app' }} />
-      <Stack.Screen name="usuarios" options={{ title: 'Pessoas' }} />
+      <Stack.Screen name="usuarios" options={{ title: 'Cargo' }} />
     </Stack>
   );
 }

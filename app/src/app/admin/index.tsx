@@ -220,7 +220,7 @@ export default function AdminDashboard() {
         <Atalho icon="images-outline" label="Carrossel" onPress={() => router.push(ROTAS.adminCarrossel)} />
         <Atalho icon="pricetags-outline" label="Categorias" onPress={() => router.push(ROTAS.adminCategorias)} />
         <Atalho icon="film-outline" label="Abertura" onPress={() => router.push(ROTAS.adminAbertura)} />
-        <Atalho icon="people-outline" label="Pessoas" onPress={() => router.push(ROTAS.adminUsuarios)} />
+        <Atalho icon="people-outline" label="Cargo" onPress={() => router.push(ROTAS.adminUsuarios)} />
       </View>
 
       <View style={styles.grupo}>
