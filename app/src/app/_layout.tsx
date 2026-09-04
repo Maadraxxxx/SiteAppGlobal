@@ -140,6 +140,14 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="(auth)/login" options={{ headerShown: true, title: 'Entrar' }} />
               <Stack.Screen name="(auth)/register" options={{ headerShown: true, title: 'Criar conta' }} />
+              <Stack.Screen
+                name="(auth)/esqueci-senha"
+                options={{ headerShown: true, title: 'Recuperar senha' }}
+              />
+              <Stack.Screen
+                name="redefinir-senha"
+                options={{ headerShown: true, title: 'Nova senha' }}
+              />
               {/* Cabeçalho liso, só com a seta: o banner da marca competia com
                   a foto do produto logo abaixo. Sem ele sai também o tint
                   branco, que deixaria a seta invisível no fundo claro. */}

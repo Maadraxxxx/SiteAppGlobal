@@ -81,8 +81,29 @@ model Usuario {
   enderecos        Endereco[]
   geracoesIA       GeracaoImagem[]
   comprasCreditoIA CompraCreditoIA[]
+  tokensSenha      TokenSenha[]
 
   @@map("usuarios")
+}
+
+/// Pedido de "esqueci minha senha" em aberto.
+model TokenSenha {
+  id        String  @id @default(uuid())
+  usuarioId String
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  /// SHA-256 do codigo que foi por e-mail — o codigo em si nunca e gravado.
+  /// Quem lesse a tabela poderia trocar a senha de qualquer um.
+  tokenHash String @unique
+
+  expiraEm DateTime
+  /// Marcado no uso: um pedido de recuperacao vale uma vez so.
+  usadoEm DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([usuarioId])
+  @@map("tokens_senha")
 }
 
 model Categoria {

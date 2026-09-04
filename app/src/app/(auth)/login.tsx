@@ -1,3 +1,4 @@
+import { StyleSheet } from 'react-native';
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { Button } from '@/components/Button';
@@ -45,6 +46,14 @@ export default function LoginScreen() {
       ) : null}
       <Button title="Entrar" onPress={handleSubmit} loading={loading} />
 
+      {/* Logo abaixo do Entrar, que e onde a pessoa esta olhando quando a
+          senha nao funciona. */}
+      <Link href="/(auth)/esqueci-senha" style={styles.esqueci}>
+        <ThemedText type="small" themeColor="primary">
+          Esqueci minha senha
+        </ThemedText>
+      </Link>
+
       <GoogleButton onSucesso={() => router.replace('/(tabs)/perfil')} />
       <Link href="/(auth)/register">
         <ThemedText type="link" themeColor="primary">
@@ -54,3 +63,9 @@ export default function LoginScreen() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  esqueci: {
+    alignSelf: 'center',
+  },
+});

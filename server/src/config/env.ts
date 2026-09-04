@@ -19,6 +19,14 @@ const envSchema = z.object({
 
   OPENAI_API_KEY: z.string().optional(),
 
+  // Envio de e-mail (recuperacao de senha). Sem a chave, o pedido de
+  // recuperacao continua respondendo normalmente ao cliente — so nao sai
+  // e-mail nenhum, e o servidor registra isso no log.
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_REMETENTE: z.string().default('Global Decora <onboarding@resend.dev>'),
+  /** Endereco publico do site, usado no link que vai no e-mail. */
+  APP_URL: z.string().default('http://localhost:8081'),
+
   // Access token de produção ou de teste do Mercado Pago (Checkout Transparente).
   MERCADOPAGO_ACCESS_TOKEN: z.string().optional(),
   // Segredo da assinatura do webhook, no painel do MP. Sem ele o webhook aceita

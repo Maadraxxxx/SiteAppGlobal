@@ -23,4 +23,14 @@ export const authApi = {
 
   updateSenha: (senhaAtual: string, novaSenha: string) =>
     apiRequest<void>('/auth/me/senha', { method: 'PUT', body: { senhaAtual, novaSenha } }),
+
+  /** Responde igual exista ou nao a conta — não dá pra descobrir cadastro por aqui. */
+  esqueciSenha: (email: string) =>
+    apiRequest<{ mensagem: string }>('/auth/esqueci-senha', { method: 'POST', body: { email } }),
+
+  redefinirSenha: (token: string, senha: string) =>
+    apiRequest<{ mensagem: string }>('/auth/redefinir-senha', {
+      method: 'POST',
+      body: { token, senha },
+    }),
 };

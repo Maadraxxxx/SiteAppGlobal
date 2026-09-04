@@ -28,7 +28,39 @@ const updateSenhaSchema = z.object({
   novaSenha: z.string().min(6),
 });
 
+const esqueciSenhaSchema = z.object({ email: z.string().email() });
+const redefinirSenhaSchema = z.object({
+  token: z.string().min(20),
+  senha: z.string().min(6, 'A senha precisa ter pelo menos 6 caracteres'),
+});
+
 export default async function authRoutes(app: FastifyInstance) {
+  /**
+   * Sempre responde 200, exista o e-mail ou nao. Distinguir os dois casos
+   * entregaria a qualquer um a lista de quem tem conta na loja.
+   */
+  app.post('/esqueci-senha', async (request, reply) => {
+    const { email } = esqueciSenhaSchema.parse(request.body);
+
+    try {
+      await authService.pedirRecuperacao(email);
+    } catch (erro) {
+      // Falha de envio fica no log do servidor: contar ao cliente que "o
+      // e-mail nao saiu" tambem revelaria que a conta existe.
+      request.log.error({ erro }, 'Falha ao enviar e-mail de recuperacao');
+    }
+
+    return reply.send({
+      mensagem: 'Se existir uma conta com esse e-mail, o link de recuperação já está a caminho.',
+    });
+  });
+
+  app.post('/redefinir-senha', async (request, reply) => {
+    const { token, senha } = redefinirSenhaSchema.parse(request.body);
+    await authService.redefinirSenha(token, senha);
+    return reply.send({ mensagem: 'Senha alterada. Você já pode entrar com ela.' });
+  });
+
   app.post('/register', async (request, reply) => {
     const { nome, email, senha } = registerSchema.parse(request.body);
     const usuario = await authService.registerCliente(nome, email, senha);
