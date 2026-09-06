@@ -1,6 +1,24 @@
 import type { Pedido, Rastreio } from '@global-decora/shared';
 import { apiRequest } from './client';
 
+/** Conteudo da etiqueta desenhada pelo app quando o modo simulado esta ligado. */
+export interface EtiquetaSimulada {
+  codigoRastreio: string | null;
+  servico: string;
+  referencia: string;
+  remetente: { nome: string; documento: string; logradouro: string; bairro: string; cidade: string; cep: string };
+  destinatario: {
+    nome: string;
+    logradouro: string;
+    complemento: string;
+    bairro: string;
+    cidade: string;
+    cep: string;
+  };
+  volumes: { nome: string; quantidade: number; peso: number }[];
+  pesoTotal: number;
+}
+
 export const envioApi = {
   /** Cliente acompanhando o próprio pedido. */
   rastreio: (pedidoId: string) => apiRequest<{ rastreio: Rastreio }>(`/pedidos/${pedidoId}/rastreio`),
@@ -10,6 +28,9 @@ export const envioApi = {
 
   gerarEtiqueta: (pedidoId: string) =>
     apiRequest<{ pedido: Pedido }>(`/admin/pedidos/${pedidoId}/etiqueta`, { method: 'POST' }),
+
+  etiquetaSimulada: (pedidoId: string) =>
+    apiRequest<{ etiqueta: EtiquetaSimulada }>(`/admin/pedidos/${pedidoId}/etiqueta-simulada`),
 
   definirRastreio: (pedidoId: string, codigo: string) =>
     apiRequest<{ pedido: Pedido }>(`/admin/pedidos/${pedidoId}/rastreio`, {

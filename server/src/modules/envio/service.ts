@@ -157,3 +157,53 @@ export async function rastreioDoPedido(pedidoId: string, usuarioId?: string) {
     return { ...base, eventos: [] };
   }
 }
+
+/**
+ * Conteudo da etiqueta simulada, pro app desenhar e imprimir.
+ *
+ * Existe porque em simulacao nao ha PDF do Melhor Envio pra baixar. Os dados
+ * do remetente moram so aqui no servidor, entao e daqui que eles saem.
+ */
+export async function etiquetaSimulada(pedidoId: string) {
+  if (!env.MELHOR_ENVIO_SIMULADO) {
+    throw badRequest('A etiqueta simulada so existe com MELHOR_ENVIO_SIMULADO ligado.');
+  }
+
+  const pedido = await prisma.pedido.findUnique({
+    where: { id: pedidoId },
+    include: { itens: { include: { produto: true } }, usuario: true },
+  });
+  if (!pedido) throw notFound('Pedido nao encontrado');
+
+  const volumes = pedido.itens.map((item) => ({
+    nome: item.produto?.nome ?? 'Produto',
+    quantidade: item.quantidade,
+    peso: Number(item.produto?.peso ?? PADRAO.peso) * item.quantidade,
+  }));
+
+  return {
+    codigoRastreio: pedido.codigoRastreio,
+    servico: [pedido.freteTransportadora, pedido.freteServico].filter(Boolean).join(' '),
+    referencia: pedido.id,
+    remetente: {
+      // `||` e nao `??`: campo em branco no .env chega como string vazia, e o
+      // `??` deixaria a etiqueta sair sem remetente e sem dizer por que.
+      nome: env.REMETENTE_NOME || '(remetente nao configurado no servidor)',
+      documento: env.REMETENTE_DOCUMENTO || '',
+      logradouro: [env.REMETENTE_LOGRADOURO, env.REMETENTE_NUMERO].filter(Boolean).join(', '),
+      bairro: env.REMETENTE_BAIRRO || '',
+      cidade: [env.REMETENTE_CIDADE, env.REMETENTE_UF].filter(Boolean).join('/'),
+      cep: env.FRETE_CEP_ORIGEM || '',
+    },
+    destinatario: {
+      nome: pedido.usuario.nome,
+      logradouro: [pedido.enderecoLogradouro, pedido.enderecoNumero].filter(Boolean).join(', '),
+      complemento: pedido.enderecoComplemento ?? '',
+      bairro: pedido.enderecoBairro ?? '',
+      cidade: [pedido.enderecoCidade, pedido.enderecoUf].filter(Boolean).join('/'),
+      cep: pedido.cepDestino ?? '',
+    },
+    volumes,
+    pesoTotal: volumes.reduce((s, v) => s + v.peso, 0),
+  };
+}

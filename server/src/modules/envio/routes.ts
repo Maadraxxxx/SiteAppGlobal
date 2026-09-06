@@ -24,6 +24,12 @@ export default async function envioRoutes(app: FastifyInstance) {
         return reply.send({ pedido });
       });
 
+      adminScope.get('/:id/etiqueta-simulada', async (request, reply) => {
+        const { id } = request.params as { id: string };
+        const etiqueta = await envioService.etiquetaSimulada(id);
+        return reply.send({ etiqueta });
+      });
+
       adminScope.put('/:id/rastreio', async (request, reply) => {
         const { id } = request.params as { id: string };
         const { codigo } = rastreioSchema.parse(request.body);

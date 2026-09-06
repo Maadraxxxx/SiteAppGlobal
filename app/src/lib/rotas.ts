@@ -20,6 +20,8 @@ export const ROTAS = {
   adminChamados: '/admin/chamados' as Href,
   adminChamado: (id: string) => `/admin/chamados/${id}` as Href,
   adminPedidos: '/admin/pedidos' as Href,
+  /** Etiqueta desenhada pelo app, usada enquanto o modo simulado esta ligado. */
+  adminEtiquetaSimulada: (pedidoId: string) => `/admin/etiqueta/${pedidoId}` as Href,
   adminFinanceiro: '/admin/financeiro' as Href,
   /** Lista de pedidos ja filtrada nos que aguardam pagamento. */
   adminPedidosAguardando: '/admin/pedidos?pagamento=AGUARDANDO' as Href,

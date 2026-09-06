@@ -1,7 +1,7 @@
 import type { Pedido, StatusPagamentoPedido, StatusProducao } from '@global-decora/shared';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -22,6 +22,7 @@ import { TextField } from '@/components/TextField';
 import { ThemedText } from '@/components/themed-text';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useAdminPedidos, useAtualizarStatusPedido } from '@/hooks/usePedidos';
+import { ROTAS } from '@/lib/rotas';
 import { useTheme } from '@/hooks/use-theme';
 import { rotuloDoTema } from '@/lib/tema';
 import { abrirEmNovaAba, baixarArquivo } from '@/lib/baixar';
@@ -735,7 +736,21 @@ export default function AdminPedidosScreen() {
                     <ThemedText type="smallBold">Rastreio: {aberto.codigoRastreio}</ThemedText>
                   ) : null}
 
-                  {aberto.urlEtiqueta ? (
+                  {/* Envio simulado nao tem PDF do Melhor Envio pra baixar —
+                      a etiqueta e desenhada pelo app. */}
+                  {aberto.melhorEnvioEnvioId?.startsWith('SIMULADO-') ? (
+                    <Pressable
+                      onPress={() => router.push(ROTAS.adminEtiquetaSimulada(aberto.id))}
+                      style={({ pressed }) => [
+                        styles.acaoLinha,
+                        { borderColor: theme.border, opacity: pressed ? 0.6 : 1 },
+                      ]}>
+                      <Ionicons name="document-text-outline" size={18} color={theme.primary} />
+                      <ThemedText type="small" themeColor="primary">
+                        Ver etiqueta simulada
+                      </ThemedText>
+                    </Pressable>
+                  ) : aberto.urlEtiqueta ? (
                     <Pressable
                       onPress={() => abrirEmNovaAba(aberto.urlEtiqueta as string)}
                       style={({ pressed }) => [
