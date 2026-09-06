@@ -1,8 +1,8 @@
 import type { Pedido, StatusPagamentoPedido, StatusProducao } from '@global-decora/shared';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -234,6 +234,22 @@ export default function AdminPedidosScreen() {
   // que aquele id já foi atendido — senão, qualquer recarga da lista depois
   // (mudar um status, por exemplo) reabriria a ficha que o admin fechou.
   const jaAbriu = useRef<string | undefined>(undefined);
+
+  // Quem estava aberto quando saimos pra ver a etiqueta. A ficha e um modal, e
+  // modal fica por cima de qualquer tela empilhada — entao ela precisa fechar
+  // na ida, e voltar sozinha na volta, senao o admin cai na grade sem saber em
+  // que pedido estava.
+  const voltarPara = useRef<string | undefined>(undefined);
+
+  useFocusEffect(
+    useCallback(() => {
+      const id = voltarPara.current;
+      if (!id) return;
+      voltarPara.current = undefined;
+      const alvo = todos.find((p) => p.id === id);
+      if (alvo) setAberto(alvo);
+    }, [todos]),
+  );
   useEffect(() => {
     if (!abrir || jaAbriu.current === abrir) return;
     const alvo = todos.find((p) => p.id === abrir);
@@ -750,7 +766,11 @@ export default function AdminPedidosScreen() {
                       a etiqueta e desenhada pelo app. */}
                   {aberto.melhorEnvioEnvioId?.startsWith('SIMULADO-') ? (
                     <Pressable
-                      onPress={() => router.push(ROTAS.adminEtiquetaSimulada(aberto.id))}
+                      onPress={() => {
+                        voltarPara.current = aberto.id;
+                        setAberto(null);
+                        router.push(ROTAS.adminEtiquetaSimulada(aberto.id));
+                      }}
                       style={({ pressed }) => [
                         styles.acaoLinha,
                         { borderColor: theme.border, opacity: pressed ? 0.6 : 1 },
