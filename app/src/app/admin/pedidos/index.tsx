@@ -718,6 +718,19 @@ export default function AdminPedidosScreen() {
                     Envio
                   </ThemedText>
 
+                  {/* O erro fica aqui, e nao no fim da folha: la embaixo ele
+                      nascia fora da vista, e gerar etiqueta parecia nao fazer
+                      nada quando na verdade o servidor tinha explicado o
+                      motivo. */}
+                  {error ? (
+                    <View style={[styles.aviso, { borderColor: theme.danger }]}>
+                      <Ionicons name="alert-circle" size={18} color={theme.danger} />
+                      <ThemedText type="small" themeColor="danger" style={styles.avisoTexto}>
+                        {error}
+                      </ThemedText>
+                    </View>
+                  ) : null}
+
                   {aberto.codigoRastreio ? (
                     <ThemedText type="smallBold">Rastreio: {aberto.codigoRastreio}</ThemedText>
                   ) : null}
@@ -820,11 +833,6 @@ export default function AdminPedidosScreen() {
                   </View>
                 </View>
 
-                {error ? (
-                  <ThemedText type="small" themeColor="danger">
-                    {error}
-                  </ThemedText>
-                ) : null}
               </>
             ) : null}
           </ScrollView>
@@ -837,6 +845,17 @@ export default function AdminPedidosScreen() {
 }
 
 const styles = StyleSheet.create({
+  aviso: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    padding: Spacing.three,
+    borderRadius: Radius.small,
+    borderWidth: 1,
+  },
+  avisoTexto: {
+    flex: 1,
+  },
   screen: {
     flex: 1,
     paddingTop: Spacing.four,
