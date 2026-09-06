@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Print from 'expo-print';
 import { useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { envioApi, type EtiquetaSimulada } from '@/api/envio';
+import { imprimirHtml } from '@/lib/impressao';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
@@ -104,7 +104,7 @@ export default function EtiquetaSimuladaScreen() {
     if (!data) return;
     setErro(undefined);
     try {
-      await Print.printAsync({ html: html(data.etiqueta) });
+      await imprimirHtml(html(data.etiqueta));
     } catch (err) {
       setErro(err instanceof Error ? err.message : 'Não deu para abrir a impressão');
     }

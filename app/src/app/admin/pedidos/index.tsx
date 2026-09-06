@@ -22,6 +22,7 @@ import { TextField } from '@/components/TextField';
 import { ThemedText } from '@/components/themed-text';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { useAdminPedidos, useAtualizarStatusPedido } from '@/hooks/usePedidos';
+import { imprimirPdf } from '@/lib/impressao';
 import { ROTAS } from '@/lib/rotas';
 import { useTheme } from '@/hooks/use-theme';
 import { rotuloDoTema } from '@/lib/tema';
@@ -318,6 +319,15 @@ export default function AdminPedidosScreen() {
       setError(err instanceof Error ? err.message : 'Nao foi possivel gerar a etiqueta');
     } finally {
       setGerandoEtiqueta(false);
+    }
+  }
+
+  async function handleImprimirEtiqueta(url: string) {
+    setError(undefined);
+    try {
+      await imprimirPdf(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Nao foi possivel abrir a impressao');
     }
   }
 
@@ -751,17 +761,33 @@ export default function AdminPedidosScreen() {
                       </ThemedText>
                     </Pressable>
                   ) : aberto.urlEtiqueta ? (
-                    <Pressable
-                      onPress={() => abrirEmNovaAba(aberto.urlEtiqueta as string)}
-                      style={({ pressed }) => [
-                        styles.acaoLinha,
-                        { borderColor: theme.border, opacity: pressed ? 0.6 : 1 },
-                      ]}>
-                      <Ionicons name="document-text-outline" size={18} color={theme.primary} />
-                      <ThemedText type="small" themeColor="primary">
-                        Baixar etiqueta (PDF)
-                      </ThemedText>
-                    </Pressable>
+                    <>
+                      {/* Imprimir vem primeiro: e o que se faz com a etiqueta.
+                          Baixar fica pra quem quer guardar o arquivo. */}
+                      <Pressable
+                        onPress={() => handleImprimirEtiqueta(aberto.urlEtiqueta as string)}
+                        style={({ pressed }) => [
+                          styles.acaoLinha,
+                          { borderColor: theme.primary, opacity: pressed ? 0.6 : 1 },
+                        ]}>
+                        <Ionicons name="print-outline" size={18} color={theme.primary} />
+                        <ThemedText type="small" themeColor="primary">
+                          Imprimir etiqueta
+                        </ThemedText>
+                      </Pressable>
+
+                      <Pressable
+                        onPress={() => abrirEmNovaAba(aberto.urlEtiqueta as string)}
+                        style={({ pressed }) => [
+                          styles.acaoLinha,
+                          { borderColor: theme.border, opacity: pressed ? 0.6 : 1 },
+                        ]}>
+                        <Ionicons name="document-text-outline" size={18} color={theme.primary} />
+                        <ThemedText type="small" themeColor="primary">
+                          Baixar etiqueta (PDF)
+                        </ThemedText>
+                      </Pressable>
+                    </>
                   ) : (
                     <Button
                       title="Gerar etiqueta no Melhor Envio"
