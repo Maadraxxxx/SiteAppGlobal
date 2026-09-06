@@ -1,4 +1,5 @@
 import { StatusPagamentoPedido, StatusProducao } from '@prisma/client';
+import { env } from '../../config/env';
 import { prisma } from '../../db/prisma';
 import { badRequest, notFound } from '../../lib/http-error';
 import { comprarEtiqueta, rastrear } from '../../lib/melhor-envio-etiqueta';
@@ -12,7 +13,11 @@ export async function gerarEtiqueta(pedidoId: string) {
   });
   if (!pedido) throw notFound('Pedido nao encontrado');
 
-  if (pedido.urlEtiqueta) throw badRequest('Esse pedido ja tem etiqueta');
+  // A trava olha o id do envio, e nao o link do PDF. Sao coisas diferentes: a
+  // compra da etiqueta ja aconteceu quando o id existe, e o link pode faltar —
+  // se o passo de impressao falhar, ou numa etiqueta simulada. Olhando o link,
+  // um pedido ja despachado aceitava uma segunda compra, cobrada de novo.
+  if (pedido.melhorEnvioEnvioId) throw badRequest('Esse pedido ja tem etiqueta');
   // So faz sentido despachar o que ja foi pago — e agora e uma pergunta direta,
   // sem depender de qual etapa da bancada o pedido alcancou.
   if (pedido.statusPagamento !== StatusPagamentoPedido.PAGO) {
@@ -24,7 +29,12 @@ export async function gerarEtiqueta(pedidoId: string) {
 
   // O serviço escolhido no checkout ficou guardado só pelo nome; pra recomprar
   // a etiqueta o Melhor Envio quer o id. Recupera pelo endereço do pedido.
-  const servicoId = await descobrirServicoId(pedido);
+  //
+  // Em simulação isso é pulado: recotar também bate na API, e o modo existe
+  // justamente pra funcionar sem conta. As conferências de regra do negócio —
+  // pedido pago, com endereço e com CPF — continuam valendo, porque são elas
+  // que o admin precisa conhecer antes de despachar de verdade.
+  const servicoId = env.MELHOR_ENVIO_SIMULADO ? 0 : await descobrirServicoId(pedido);
 
   // O CPF fica no endereço do cliente, e o pedido guarda uma cópia do endereço
   // sem o documento — então busca no cadastro dele pelo mesmo CEP.

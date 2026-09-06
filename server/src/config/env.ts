@@ -42,6 +42,13 @@ const envSchema = z.object({
     .enum(['true', 'false'])
     .default('true')
     .transform((v) => v === 'true'),
+  // Emite etiqueta de mentira, sem falar com o Melhor Envio nem exigir conta.
+  // Serve pra ver a tela funcionando antes de ter token e saldo. Tudo que sai
+  // dela vem marcado como SIMULADO, pra nunca passar por etiqueta de verdade.
+  MELHOR_ENVIO_SIMULADO: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
   // O Melhor Envio exige User-Agent com um contato — é regra da API deles.
   MELHOR_ENVIO_CONTATO: z.string().default('contato@globaldecora.com'),
   // CEP de onde as encomendas saem (a loja). Sem ele não dá pra cotar.

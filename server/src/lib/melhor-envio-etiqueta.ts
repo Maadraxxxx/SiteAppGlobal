@@ -100,12 +100,35 @@ export interface VolumeEtiqueta {
  * da conta, gera e pega o PDF. São quatro chamadas encadeadas — se qualquer
  * uma falhar, o erro sobe com a resposta deles pra dar pra entender o porquê.
  */
+/**
+ * Etiqueta de mentira, pra ver a tela funcionando antes de ter conta no Melhor
+ * Envio.
+ *
+ * O codigo de rastreio comeca com SIMULADO de proposito: ele aparece na tela
+ * do admin, na do cliente e na busca de pedidos, entao quem olhar em qualquer
+ * um desses lugares ve na hora que nao ha pacote nenhum a caminho. Um codigo
+ * com cara de real seria pior que nao ter etiqueta.
+ */
+function etiquetaSimulada(referencia: string) {
+  return {
+    envioId: `SIMULADO-${referencia.slice(0, 8)}`,
+    codigoRastreio: `SIMULADO-${referencia.slice(0, 8).toUpperCase()}`,
+    // Sem PDF: nao existe etiqueta pra imprimir, e devolver um link quebrado
+    // faria o admin tentar imprimir e achar que o sistema falhou.
+    urlEtiqueta: undefined,
+  };
+}
+
 export async function comprarEtiqueta(params: {
   servicoId: number;
   destinatario: DestinatarioEtiqueta;
   volumes: VolumeEtiqueta[];
   referencia: string;
 }) {
+  // Antes de qualquer conferencia: o modo simulado existe justamente pra
+  // funcionar sem token e sem os dados do remetente.
+  if (env.MELHOR_ENVIO_SIMULADO) return etiquetaSimulada(params.referencia);
+
   const total = params.volumes.reduce((s, v) => s + v.valorUnitario * v.quantidade, 0);
 
   // 1) carrinho
@@ -182,6 +205,21 @@ export async function comprarEtiqueta(params: {
 
 /** Consulta o andamento no Melhor Envio pra mostrar ao cliente. */
 export async function rastrear(envioId: string) {
+  // Envio simulado nao existe la; perguntar daria erro de token faltando.
+  if (env.MELHOR_ENVIO_SIMULADO || envioId.startsWith('SIMULADO-')) {
+    return {
+      status: 'simulado',
+      eventos: [
+        {
+          status: 'Etiqueta simulada',
+          description:
+            'Este envio foi gerado em modo de simulacao — nao existe pacote a caminho.',
+          created_at: new Date().toISOString(),
+        },
+      ],
+    };
+  }
+
   const resposta = await meFetch('/api/v2/me/shipment/tracking', {
     method: 'POST',
     body: JSON.stringify({ orders: [envioId] }),
