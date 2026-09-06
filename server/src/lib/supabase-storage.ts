@@ -92,6 +92,11 @@ export async function criarUrlDeEnvio(filename: string) {
       apikey: env.SUPA_SERVICE_ROLE_KEY as string,
       'Content-Type': 'application/json',
     },
+    // O corpo vazio e obrigatorio: dizer que o conteudo e JSON e nao mandar
+    // nada faz a Supabase recusar com "Body cannot be empty when content-type
+    // is set to 'application/json'". Esta rota nao precisa de parametro
+    // nenhum, mas precisa do objeto.
+    body: '{}',
   });
 
   if (!res.ok) {
