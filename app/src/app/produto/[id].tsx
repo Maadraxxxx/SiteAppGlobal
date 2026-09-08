@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
+import { DescricaoProduto } from '@/components/DescricaoProduto';
 import { Screen } from '@/components/Screen';
 import { Tag } from '@/components/Tag';
 import { TemaChatModal } from '@/components/TemaChatModal';
@@ -127,11 +128,7 @@ export default function ProdutoDetailScreen() {
           {produto.categoria ? <Tag label={produto.categoria.nome} /> : null}
         </View>
 
-        {produto.descricao ? (
-          <ThemedText themeColor="textSecondary" style={styles.descricao}>
-            {produto.descricao}
-          </ThemedText>
-        ) : null}
+        {produto.descricao ? <DescricaoProduto texto={produto.descricao} /> : null}
 
         {produto.comprimento || produto.largura || produto.altura || produto.peso ? (
           <ThemedText type="small" themeColor="textSecondary">
@@ -265,9 +262,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.two,
     flexWrap: 'wrap',
-  },
-  descricao: {
-    lineHeight: 20,
   },
   comprarRow: {
     flexDirection: 'row',
