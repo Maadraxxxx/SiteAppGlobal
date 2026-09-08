@@ -180,7 +180,7 @@ export default function PerfilScreen() {
         <MenuRow
           icon="person-outline"
           label="Editar Perfil"
-          descricao="Nome, e-mail e senha"
+          descricao="Nome e e-mail"
           onPress={() => router.push('/editar-perfil')}
         />
         <MenuRow

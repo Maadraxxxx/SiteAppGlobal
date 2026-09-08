@@ -17,11 +17,6 @@ export default function EditarPerfilScreen() {
   const [dadosSucesso, setDadosSucesso] = useState(false);
   const [savingDados, setSavingDados] = useState(false);
 
-  const [senhaAtual, setSenhaAtual] = useState('');
-  const [novaSenha, setNovaSenha] = useState('');
-  const [senhaError, setSenhaError] = useState<string>();
-  const [senhaSucesso, setSenhaSucesso] = useState(false);
-  const [savingSenha, setSavingSenha] = useState(false);
 
   async function handleSalvarDados() {
     if (!nome.trim() || !email.trim()) {
@@ -42,25 +37,6 @@ export default function EditarPerfilScreen() {
     }
   }
 
-  async function handleSalvarSenha() {
-    if (!senhaAtual || novaSenha.length < 6) {
-      setSenhaError('Informe a senha atual e uma nova senha com pelo menos 6 caracteres.');
-      return;
-    }
-    setSenhaError(undefined);
-    setSenhaSucesso(false);
-    setSavingSenha(true);
-    try {
-      await authApi.updateSenha(senhaAtual, novaSenha);
-      setSenhaAtual('');
-      setNovaSenha('');
-      setSenhaSucesso(true);
-    } catch (err) {
-      setSenhaError(err instanceof Error ? err.message : 'Erro ao salvar');
-    } finally {
-      setSavingSenha(false);
-    }
-  }
 
   return (
     <Screen style={{ gap: Spacing.four }}>
@@ -82,21 +58,6 @@ export default function EditarPerfilScreen() {
         <Button title="Salvar dados" onPress={handleSalvarDados} loading={savingDados} />
       </FormSection>
 
-      <FormSection title="Alterar senha">
-        <TextField label="Senha atual" value={senhaAtual} onChangeText={setSenhaAtual} secureTextEntry />
-        <TextField label="Nova senha" value={novaSenha} onChangeText={setNovaSenha} secureTextEntry />
-        {senhaError ? (
-          <ThemedText type="small" themeColor="danger">
-            {senhaError}
-          </ThemedText>
-        ) : null}
-        {senhaSucesso ? (
-          <ThemedText type="small" themeColor="success">
-            Senha alterada!
-          </ThemedText>
-        ) : null}
-        <Button title="Alterar senha" onPress={handleSalvarSenha} loading={savingSenha} />
-      </FormSection>
     </Screen>
   );
 }
