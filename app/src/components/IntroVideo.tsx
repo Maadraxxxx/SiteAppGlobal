@@ -55,13 +55,21 @@ function marcarParaTocarEmbutido(video: HTMLVideoElement) {
 }
 
 export function IntroVideo({ onFim, videoUrl }: { onFim: () => void; videoUrl?: string | null }) {
-  const [fase, setFase] = useState<Fase>('carregando');
+  // No app o play acontece na criação do player, então a abertura já nasce
+  // tocando — a fase "carregando" existe pra web, onde o play espera o vídeo.
+  const [fase, setFase] = useState<Fase>(Platform.OS === 'web' ? 'carregando' : 'tocando');
   const [saindo, setSaindo] = useState(false);
   const containerRef = useRef<View>(null);
   // Ref (e não state) porque o timeout e o evento de fim podem chegar juntos, e
   // o state só atualiza no próximo render — dava pra chamar onFim duas vezes.
   const jaSaiu = useRef(false);
   const limite = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Enquanto isto for true o player nativo existe. Depois de sair de cena ele
+  // e liberado, e qualquer pergunta a ele estoura "Unable to find the native
+  // shared object".
+  const vivo = useRef(true);
+  // Todo timer agendado entra aqui, pra nenhum sobreviver ao fim da abertura.
+  const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
 
   // O admin pode trocar a abertura pelo painel. Enquanto ele nao troca — ou se
   // a configuracao nao carregar — vale a que vem dentro do app.
@@ -76,11 +84,29 @@ export function IntroVideo({ onFim, videoUrl }: { onFim: () => void; videoUrl?: 
     // Abaixa o som de outros apps em vez de calar: se o cliente estava ouvindo
     // música, ela volta ao normal quando a abertura acaba.
     player.audioMixingMode = 'duckOthers';
+
+    // No app o play sai daqui mesmo. Nao existe bloqueio de autoplay fora do
+    // navegador, e esperar o evento "readyToPlay" era uma corrida perdida: o
+    // video vem embutido, fica pronto quase na hora e o evento podia acontecer
+    // antes de o listener existir. Quando isso acontecia, o play nunca vinha e
+    // a abertura caia no convite de toque — que so devia aparecer na web.
+    if (Platform.OS !== 'web') player.play();
   });
+
+  /** setTimeout que se cancela sozinho quando a abertura sai de cena. */
+  function agendar(acao: () => void, ms: number) {
+    const id = setTimeout(() => {
+      timers.current.delete(id);
+      if (!vivo.current) return;
+      acao();
+    }, ms);
+    timers.current.add(id);
+    return id;
+  }
 
   function armarLimite(ms: number) {
     if (limite.current) clearTimeout(limite.current);
-    limite.current = setTimeout(encerrar, ms);
+    limite.current = agendar(encerrar, ms);
   }
 
   function encerrar() {
@@ -93,6 +119,8 @@ export function IntroVideo({ onFim, videoUrl }: { onFim: () => void; videoUrl?: 
 
   /** O vídeo pode ter começado no meio tempo — só conta como parado se não deu sinal. */
   function estaAndando() {
+    // Fora de cena, o objeto nativo ja foi embora: perguntar derruba o app.
+    if (!vivo.current || jaSaiu.current) return true;
     return player.playing || player.currentTime > 0.1;
   }
 
@@ -102,14 +130,20 @@ export function IntroVideo({ onFim, videoUrl }: { onFim: () => void; videoUrl?: 
   }
 
   /**
-   * O iPhone bloqueia o autoplay quando está em Modo de Baixo Consumo ou com a
-   * reprodução automática desligada — é trava do sistema, nenhum código
-   * contorna. Em vez de engolir a abertura, oferecemos: um toque é gesto do
-   * usuário, e com gesto o iOS libera. Quem não tocar entra na loja sozinho,
-   * pra abertura nunca virar um muro na porta da loja.
+   * O navegador recusa autoplay sem gesto do usuário — é trava dele, nenhum
+   * código contorna. Em vez de engolir a abertura, oferecemos: um toque é
+   * gesto, e com gesto o navegador libera. Quem não tocar entra na loja
+   * sozinho, pra abertura nunca virar um muro na porta da loja.
+   *
+   * Dentro do app essa trava não existe: o play sai na criação do player. Se
+   * mesmo assim o vídeo não anda, pedir um toque não mudaria nada — então lá
+   * a abertura sai de cena e deixa o cliente entrar.
    */
   function oferecerToque() {
     if (jaSaiu.current || estaAndando()) return;
+
+    if (Platform.OS !== 'web') return encerrar();
+
     setFase('oferecendo');
     armarLimite(ESPERA_TOQUE_MS);
   }
@@ -130,7 +164,7 @@ export function IntroVideo({ onFim, videoUrl }: { onFim: () => void; videoUrl?: 
     // O status pode chegar antes do React montar o <video>. Esperar alguns
     // quadros é bem melhor que desistir da abertura por uma corrida de tempo.
     if (!video) {
-      if (tentativa < 20) setTimeout(() => tocar(aoFalhar, tentativa + 1), 50);
+      if (tentativa < 20) agendar(() => tocar(aoFalhar, tentativa + 1), 50);
       else encerrar();
       return;
     }
@@ -148,8 +182,8 @@ export function IntroVideo({ onFim, videoUrl }: { onFim: () => void; videoUrl?: 
     }, aoFalhar);
   }
 
-  // Dar play no callback de criação não pega no web: naquele momento a fonte
-  // ainda não carregou e a chamada se perde. Esperar o "readyToPlay" resolve.
+  // Na web o play do callback de criação não pega: naquele momento a fonte
+  // ainda não carregou e a chamada se perde. Lá o "readyToPlay" é o gatilho.
   useEventListener(player, 'statusChange', ({ status }) => {
     // Fonte quebrada não pode deixar a abertura travada na frente da loja.
     if (status === 'error') return encerrar();
@@ -159,7 +193,7 @@ export function IntroVideo({ onFim, videoUrl }: { onFim: () => void; videoUrl?: 
 
     // Segunda rede, pra quando o play() é aceito mas nada anda — o Chrome faz
     // isso com vídeo mudo em aba de segundo plano: aceita e para sozinho.
-    setTimeout(oferecerToque, ESPERA_PLAY_MS);
+    agendar(oferecerToque, ESPERA_PLAY_MS);
   });
 
   useEventListener(player, 'playToEnd', encerrar);
@@ -171,11 +205,16 @@ export function IntroVideo({ onFim, videoUrl }: { onFim: () => void; videoUrl?: 
     // pode nunca chegar e a abertura ficaria parada na logo. Passados 2s sem
     // sinal de vida, convidamos pro toque — que é justamente o gesto que
     // destrava o carregamento no iOS.
-    const espera = setTimeout(oferecerToque, ESPERA_CARREGANDO_MS);
+    const espera = agendar(oferecerToque, ESPERA_CARREGANDO_MS);
 
     return () => {
+      // A ordem importa: marcar como morto antes de limpar garante que um
+      // timer que ja estava correndo nao chegue a tocar no player.
+      vivo.current = false;
       clearTimeout(espera);
       if (limite.current) clearTimeout(limite.current);
+      timers.current.forEach(clearTimeout);
+      timers.current.clear();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -201,7 +240,7 @@ export function IntroVideo({ onFim, videoUrl }: { onFim: () => void; videoUrl?: 
     // maior que a do autoplay porque no iPhone o carregamento só começa agora.
     armarLimite(LIMITE_TOCANDO_MS);
     tocar(encerrar);
-    setTimeout(encerrarSeParado, ESPERA_APOS_TOQUE_MS);
+    agendar(encerrarSeParado, ESPERA_APOS_TOQUE_MS);
   }
 
   if (saindo) return null;
