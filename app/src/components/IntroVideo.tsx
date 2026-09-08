@@ -135,14 +135,16 @@ export function IntroVideo({ onFim, videoUrl }: { onFim: () => void; videoUrl?: 
    * gesto, e com gesto o navegador libera. Quem não tocar entra na loja
    * sozinho, pra abertura nunca virar um muro na porta da loja.
    *
-   * Dentro do app essa trava não existe: o play sai na criação do player. Se
-   * mesmo assim o vídeo não anda, pedir um toque não mudaria nada — então lá
-   * a abertura sai de cena e deixa o cliente entrar.
+   * Dentro do app não existe trava nenhuma pra contornar: o play sai na
+   * criação do player. Por isso lá esta função não faz nada — quem termina a
+   * abertura é o fim do vídeo, e o limite de segurança cobre o caso de ela
+   * travar. Chegou a encerrar aqui numa versão anterior, e era pior: a
+   * verificação roda 2 segundos depois de abrir, e bastava o player ainda não
+   * ter reportado `playing` pra abertura ser cortada no meio.
    */
   function oferecerToque() {
+    if (Platform.OS !== 'web') return;
     if (jaSaiu.current || estaAndando()) return;
-
-    if (Platform.OS !== 'web') return encerrar();
 
     setFase('oferecendo');
     armarLimite(ESPERA_TOQUE_MS);
