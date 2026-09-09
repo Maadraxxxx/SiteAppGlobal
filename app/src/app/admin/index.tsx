@@ -222,6 +222,11 @@ export default function AdminDashboard() {
           e "Produtos", que é por onde se edita o que já existe. */}
       <View style={styles.atalhos}>
         <Atalho icon="cube-outline" label="Produtos" onPress={() => router.push(ROTAS.adminProdutos)} />
+        <Atalho
+          icon="sparkles-outline"
+          label="Peças de IA"
+          onPress={() => router.push(ROTAS.adminProdutosIA)}
+        />
         <Atalho icon="images-outline" label="Carrossel" onPress={() => router.push(ROTAS.adminCarrossel)} />
         <Atalho icon="pricetags-outline" label="Categorias" onPress={() => router.push(ROTAS.adminCategorias)} />
         <Atalho icon="film-outline" label="Abertura" onPress={() => router.push(ROTAS.adminAbertura)} />

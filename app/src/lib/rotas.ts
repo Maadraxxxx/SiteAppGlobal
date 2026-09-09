@@ -30,6 +30,8 @@ export const ROTAS = {
   /** Abre a lista de pedidos já com aquele pedido aberto. */
   adminPedido: (pedidoId: string) => `/admin/pedidos?abrir=${pedidoId}` as Href,
   adminProdutos: '/admin/produtos' as Href,
+  /** Aba propria das pecas base da IA — separada do catalogo. */
+  adminProdutosIA: '/admin/produtos-ia' as Href,
   adminCarrossel: '/admin/banners' as Href,
   adminCategorias: '/admin/categorias' as Href,
   adminAbertura: '/admin/abertura' as Href,

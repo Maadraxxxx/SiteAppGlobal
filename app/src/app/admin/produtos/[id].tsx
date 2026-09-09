@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Switch, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { FormSection } from '@/components/FormSection';
 import { ImageUploadField } from '@/components/ImageUploadField';
@@ -21,9 +21,10 @@ import { useAdminProduto, useCreateProduto, useUpdateProduto } from '@/hooks/use
 import { useTheme } from '@/hooks/use-theme';
 
 export default function AdminProdutoFormScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, ia } = useLocalSearchParams<{ id: string; ia?: string }>();
   const theme = useTheme();
   const isNew = id === 'novo';
+  const ehNovaPecaIA = isNew && ia === '1';
 
   const { data } = useAdminProduto(isNew ? undefined : id);
   const categorias = useCategorias();
@@ -46,7 +47,10 @@ export default function AdminProdutoFormScreen() {
   const [altura, setAltura] = useState('');
   const [peso, setPeso] = useState('');
   const [imagemUrl, setImagemUrl] = useState<string>();
-  const [paraIA, setParaIA] = useState(false);
+  // Nao e escolha do formulario: vem da tela que abriu o cadastro. Peca de IA
+  // se cadastra na aba propria, produto de catalogo no painel de produtos —
+  // converter um no outro so criaria produto sem estampa solto na loja.
+  const paraIA = ehNovaPecaIA || data?.produto.paraIA || false;
   const [categoriaId, setCategoriaId] = useState<string>();
   const [formatoId, setFormatoId] = useState<string>();
   const [estiloId, setEstiloId] = useState<string>();
@@ -66,7 +70,6 @@ export default function AdminProdutoFormScreen() {
       setAltura(produto.altura ? String(produto.altura) : '');
       setPeso(produto.peso ? String(produto.peso) : '');
       setImagemUrl(produto.imagemUrl ?? undefined);
-      setParaIA(produto.paraIA);
       setCategoriaId(produto.categoriaId);
       setFormatoId(produto.formatoId);
       setEstiloId(produto.estiloId);
@@ -131,7 +134,17 @@ export default function AdminProdutoFormScreen() {
   return (
     <Screen maxWidth={720} style={styles.screen}>
       <View style={styles.topo}>
-        <ThemedText type="title">{isNew ? 'Novo produto' : 'Editar produto'}</ThemedText>
+        <ThemedText type="title">
+          {isNew ? (ehNovaPecaIA ? 'Nova peça de IA' : 'Novo produto') : 'Editar produto'}
+        </ThemedText>
+        {paraIA ? (
+          <View style={[styles.selo, { backgroundColor: theme.backgroundSelected }]}>
+            <Ionicons name="sparkles" size={14} color={theme.primary} />
+            <ThemedText type="small" themeColor="primary" style={styles.seloTexto}>
+              Peça de IA: a foto deve ser só o esboço, sem estampa. Ela não aparece no catálogo.
+            </ThemedText>
+          </View>
+        ) : null}
         <ThemedText type="small" themeColor="textSecondary">
           Os campos marcados com{' '}
           <ThemedText type="smallBold" themeColor="primary">
@@ -224,27 +237,6 @@ export default function AdminProdutoFormScreen() {
       </FormSection>
 
       <FormSection
-        title="Tipo de produto"
-        icone="sparkles-outline"
-        descricao="Decide onde o produto aparece e se a IA pode criar arte em cima dele.">
-        <View style={styles.tipo}>
-          <View style={styles.tipoTexto}>
-            <ThemedText type="smallBold">Peça base para IA</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              {paraIA
-                ? 'Fica fora do catálogo e aparece em "Personalizar com IA". A foto deve ser só o esboço, sem estampa.'
-                : 'Produto pronto: aparece no catálogo e não oferece personalização.'}
-            </ThemedText>
-          </View>
-          <Switch
-            value={paraIA}
-            onValueChange={setParaIA}
-            trackColor={{ true: theme.primary, false: theme.border }}
-          />
-        </View>
-      </FormSection>
-
-      <FormSection
         title="Classificação"
         icone="funnel-outline"
         descricao="É por aqui que o cliente filtra o catálogo.">
@@ -317,16 +309,17 @@ const styles = StyleSheet.create({
     gap: Spacing.four,
   },
   topo: {
-    gap: Spacing.one,
+    gap: Spacing.two,
   },
-  tipo: {
+  selo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
+    gap: Spacing.two,
+    padding: Spacing.three,
+    borderRadius: Radius.small,
   },
-  tipoTexto: {
+  seloTexto: {
     flex: 1,
-    gap: Spacing.half,
   },
   medidas: {
     flexDirection: 'row',
