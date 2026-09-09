@@ -105,13 +105,16 @@ export default function ProdutoDetailScreen() {
         legenda={produto.nome}
       />
 
-      {produto.imagemUrl ? (
+      {/* So o produto base da IA oferece personalizacao. No produto pronto o
+          botao prometia trocar uma estampa que ja e a arte comprada — e a peca
+          sem estampa, que a IA precisa, agora vive na aba propria. */}
+      {produto.paraIA && produto.imagemUrl ? (
         <Pressable
           onPress={() => setChatAberto(true)}
           style={[styles.iaButton, { borderColor: theme.primary }]}>
           <Ionicons name="sparkles" size={16} color={theme.primary} />
           <ThemedText type="small" themeColor="primary">
-            Personalizar com IA
+            Criar a arte da minha festa
           </ThemedText>
         </Pressable>
       ) : null}

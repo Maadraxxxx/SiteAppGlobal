@@ -14,6 +14,8 @@ export const ROTAS = {
   /** Catalogo ja aberto no filtro daquela categoria. */
   catalogoDaCategoria: (slug: string) => `/(tabs)/catalogo?categoria=${slug}` as Href,
   enderecos: '/enderecos' as Href,
+  /** Aba da IA: so os produtos base, sem estampa. */
+  personalizar: '/personalizar' as Href,
   suporte: '/suporte' as Href,
   suporteNovo: '/suporte/novo' as Href,
   chamado: (id: string) => `/suporte/${id}` as Href,

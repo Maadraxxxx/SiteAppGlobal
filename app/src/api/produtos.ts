@@ -8,6 +8,8 @@ export interface ProdutoFilters {
   search?: string;
   page?: number;
   pageSize?: number;
+  /** true lista só os esboços da IA; false, só o catálogo pronto. */
+  paraIA?: boolean;
 }
 
 function toQuery(filters: ProdutoFilters = {}) {
@@ -18,6 +20,7 @@ function toQuery(filters: ProdutoFilters = {}) {
   if (filters.search) params.set('search', filters.search);
   if (filters.page) params.set('page', String(filters.page));
   if (filters.pageSize) params.set('pageSize', String(filters.pageSize));
+  if (filters.paraIA !== undefined) params.set('paraIA', String(filters.paraIA));
   const query = params.toString();
   return query ? `?${query}` : '';
 }

@@ -17,6 +17,8 @@ const produtoSchema = z.object({
   categoriaId: z.string().uuid(),
   formatoId: z.string().uuid(),
   estiloId: z.string().uuid(),
+  /** Produto base da IA: so o esboco, sem estampa. */
+  paraIA: z.boolean().optional(),
 });
 
 const listQuerySchema = z.object({
@@ -26,12 +28,24 @@ const listQuerySchema = z.object({
   search: z.string().optional(),
   page: z.coerce.number().optional(),
   pageSize: z.coerce.number().optional(),
+  // Chega como texto na query. Ausente significa "os dois tipos", que so o
+  // painel do admin usa.
+  paraIA: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((v) => (v === undefined ? undefined : v === 'true')),
 });
 
 export default async function produtosRoutes(app: FastifyInstance) {
   app.get('/produtos', async (request, reply) => {
     const filters = listQuerySchema.parse(request.query);
-    const result = await produtosService.listProdutos(filters);
+    // O catalogo mostra produto pronto por padrao. O esboco de IA nao tem
+    // estampa pra ver — solto na grade, so pareceria produto sem foto. Quem
+    // quiser os dois pede explicitamente.
+    const result = await produtosService.listProdutos({
+      ...filters,
+      paraIA: filters.paraIA ?? false,
+    });
     return reply.send(result);
   });
 

@@ -82,6 +82,8 @@ export interface Produto {
   peso?: string | null; // kg
   imagemUrl?: string | null;
   ativo: boolean;
+  /** Produto base da personalização por IA — só o esboço, sem estampa. */
+  paraIA: boolean;
   categoriaId: string;
   formatoId: string;
   estiloId: string;
@@ -91,6 +93,8 @@ export interface Produto {
 }
 
 export interface ProdutoInput {
+  /** Produto base da personalização por IA — só o esboço, sem estampa. */
+  paraIA?: boolean;
   nome: string;
   descricao?: string;
   preco: number;

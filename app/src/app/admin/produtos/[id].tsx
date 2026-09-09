@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Switch, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { FormSection } from '@/components/FormSection';
 import { ImageUploadField } from '@/components/ImageUploadField';
@@ -46,6 +46,7 @@ export default function AdminProdutoFormScreen() {
   const [altura, setAltura] = useState('');
   const [peso, setPeso] = useState('');
   const [imagemUrl, setImagemUrl] = useState<string>();
+  const [paraIA, setParaIA] = useState(false);
   const [categoriaId, setCategoriaId] = useState<string>();
   const [formatoId, setFormatoId] = useState<string>();
   const [estiloId, setEstiloId] = useState<string>();
@@ -65,6 +66,7 @@ export default function AdminProdutoFormScreen() {
       setAltura(produto.altura ? String(produto.altura) : '');
       setPeso(produto.peso ? String(produto.peso) : '');
       setImagemUrl(produto.imagemUrl ?? undefined);
+      setParaIA(produto.paraIA);
       setCategoriaId(produto.categoriaId);
       setFormatoId(produto.formatoId);
       setEstiloId(produto.estiloId);
@@ -106,6 +108,7 @@ export default function AdminProdutoFormScreen() {
       altura: toNumber(altura),
       peso: toNumber(peso),
       imagemUrl,
+      paraIA,
       categoriaId,
       formatoId,
       estiloId,
@@ -221,6 +224,27 @@ export default function AdminProdutoFormScreen() {
       </FormSection>
 
       <FormSection
+        title="Tipo de produto"
+        icone="sparkles-outline"
+        descricao="Decide onde o produto aparece e se a IA pode criar arte em cima dele.">
+        <View style={styles.tipo}>
+          <View style={styles.tipoTexto}>
+            <ThemedText type="smallBold">Peça base para IA</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {paraIA
+                ? 'Fica fora do catálogo e aparece em "Personalizar com IA". A foto deve ser só o esboço, sem estampa.'
+                : 'Produto pronto: aparece no catálogo e não oferece personalização.'}
+            </ThemedText>
+          </View>
+          <Switch
+            value={paraIA}
+            onValueChange={setParaIA}
+            trackColor={{ true: theme.primary, false: theme.border }}
+          />
+        </View>
+      </FormSection>
+
+      <FormSection
         title="Classificação"
         icone="funnel-outline"
         descricao="É por aqui que o cliente filtra o catálogo.">
@@ -294,6 +318,15 @@ const styles = StyleSheet.create({
   },
   topo: {
     gap: Spacing.one,
+  },
+  tipo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
+  tipoTexto: {
+    flex: 1,
+    gap: Spacing.half,
   },
   medidas: {
     flexDirection: 'row',

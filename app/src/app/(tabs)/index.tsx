@@ -135,7 +135,7 @@ export default function HomeScreen() {
       ))}
 
       <Pressable
-        onPress={() => router.push('/(tabs)/catalogo')}
+        onPress={() => router.push(ROTAS.personalizar)}
         style={({ pressed }) => [
           styles.iaCard,
           { backgroundColor: theme.backgroundElement, borderColor: theme.border, opacity: pressed ? 0.8 : 1 },

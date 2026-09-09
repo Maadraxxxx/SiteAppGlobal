@@ -10,6 +10,11 @@ export interface ListProdutosFilters {
   page?: number;
   pageSize?: number;
   incluirInativos?: boolean;
+  /**
+   * Filtra pelo tipo de produto. Indefinido lista os dois — o que so o painel
+   * do admin quer. O catalogo pede `false` e a aba de IA pede `true`.
+   */
+  paraIA?: boolean;
 }
 
 const include = { categoria: true, formato: true, estilo: true } satisfies Prisma.ProdutoInclude;
@@ -20,6 +25,7 @@ export async function listProdutos(filters: ListProdutosFilters) {
 
   const where: Prisma.ProdutoWhereInput = {
     ativo: filters.incluirInativos ? undefined : true,
+    paraIA: filters.paraIA,
     categoria: filters.categoria ? { slug: filters.categoria } : undefined,
     formato: filters.formato ? { slug: filters.formato } : undefined,
     estilo: filters.estilo ? { slug: filters.estilo } : undefined,

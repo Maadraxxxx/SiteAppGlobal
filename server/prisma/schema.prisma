@@ -228,6 +228,13 @@ model Produto {
   peso        Decimal? @db.Decimal(10, 3) // kg
   imagemUrl   String?
   ativo       Boolean  @default(true)
+
+  /// Produto base da personalizacao por IA: so o esboco do painel, sem
+  /// estampa. Fica fora do catalogo — la ele so confundiria, porque nao ha
+  /// arte pra ver — e aparece na aba de IA, onde a estampa e gerada em cima
+  /// dele. So esses produtos oferecem o botao de personalizar.
+  paraIA Boolean @default(false)
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -243,6 +250,7 @@ model Produto {
   itensPedido ItemPedido[]
   geracoesIA  GeracaoImagem[]
 
+  @@index([paraIA])
   @@index([categoriaId])
   @@index([formatoId])
   @@index([estiloId])

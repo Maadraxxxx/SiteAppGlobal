@@ -20,6 +20,13 @@ import { useAdminProdutos, useDesativarProduto, useReativarProduto } from '@/hoo
 import { useTheme } from '@/hooks/use-theme';
 
 type Situacao = 'todos' | 'ativos' | 'inativos';
+type Tipo = 'todos' | 'catalogo' | 'ia';
+
+const TIPOS: { valor: Tipo; rotulo: string }[] = [
+  { valor: 'todos', rotulo: 'Tudo' },
+  { valor: 'catalogo', rotulo: 'Catálogo' },
+  { valor: 'ia', rotulo: 'Peças de IA' },
+];
 
 const SITUACOES: { valor: Situacao; rotulo: string }[] = [
   { valor: 'todos', rotulo: 'Todos' },
@@ -68,6 +75,7 @@ export default function AdminProdutosScreen() {
   const [filtro, setFiltro] = useState('');
   const [situacao, setSituacao] = useState<Situacao>('todos');
   const [categoriaSlug, setCategoriaSlug] = useState<string>();
+  const [tipo, setTipo] = useState<Tipo>('todos');
 
   const theme = useTheme();
   const mostrarBarra = useMostrarBarraDeRolagem();
@@ -81,6 +89,9 @@ export default function AdminProdutosScreen() {
     search: filtro || undefined,
     categoria: categoriaSlug,
     pageSize: POR_PAGINA,
+    // Sem escolha, a rota do admin traz os dois tipos — e é o único lugar do
+    // app onde isso interessa.
+    paraIA: tipo === 'todos' ? undefined : tipo === 'ia',
   });
   const categorias = useCategorias();
   const desativarMutation = useDesativarProduto();
@@ -98,7 +109,7 @@ export default function AdminProdutosScreen() {
 
   const total = data?.total ?? 0;
   const cortou = total > todos.length;
-  const filtrando = !!filtro || !!categoriaSlug || situacao !== 'todos';
+  const filtrando = !!filtro || !!categoriaSlug || situacao !== 'todos' || tipo !== 'todos';
 
   return (
     <Screen scroll={false} style={styles.tela}>
@@ -118,6 +129,17 @@ export default function AdminProdutosScreen() {
             <Ionicons name="close-circle" size={18} color={theme.textSecondary} />
           </Pressable>
         ) : null}
+      </View>
+
+      <View style={styles.filtros}>
+        {TIPOS.map((t) => (
+          <Pilula
+            key={t.valor}
+            rotulo={t.rotulo}
+            ativa={tipo === t.valor}
+            onPress={() => setTipo(t.valor)}
+          />
+        ))}
       </View>
 
       <View style={styles.filtros}>
@@ -165,6 +187,7 @@ export default function AdminProdutosScreen() {
               setBusca('');
               setSituacao('todos');
               setCategoriaSlug(undefined);
+              setTipo('todos');
             }}
             hitSlop={8}>
             <ThemedText type="smallBold" themeColor="primary">
@@ -218,6 +241,14 @@ export default function AdminProdutosScreen() {
                   R$ {Number(item.preco).toFixed(2).replace('.', ',')}
                   {item.ativo ? '' : ' · inativo'}
                 </ThemedText>
+                {item.paraIA ? (
+                  <View style={styles.marcaIA}>
+                    <Ionicons name="sparkles" size={11} color={theme.primary} />
+                    <ThemedText type="small" themeColor="primary">
+                      Peça de IA
+                    </ThemedText>
+                  </View>
+                ) : null}
               </View>
               <Pressable
                 onPress={() =>
@@ -306,6 +337,11 @@ const styles = StyleSheet.create({
   rowLabel: {
     flex: 1,
     gap: Spacing.half,
+  },
+  marcaIA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
   },
   iconButton: {
     padding: Spacing.one,
