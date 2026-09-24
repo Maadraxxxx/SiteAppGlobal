@@ -112,7 +112,8 @@ export async function maisVendidos(limite = 8) {
       WHERE ped."statusPagamento" = 'PAGO'
       GROUP BY i."produtoId"
     ) v ON v.pid = p.id
-    WHERE p.ativo = true
+    -- Peca de IA e so esboco, sem estampa: fora do catalogo, fora daqui.
+    WHERE p.ativo = true AND p."paraIA" = false
     ORDER BY COALESCE(v.qtd, 0) DESC, p."createdAt" DESC, p.id DESC
     LIMIT ${limite}
   `;

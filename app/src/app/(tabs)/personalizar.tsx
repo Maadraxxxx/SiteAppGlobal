@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { BotaoVoltar } from '@/components/BotaoVoltar';
+import { CartButton } from '@/components/CartButton';
 import { Screen, useMostrarBarraDeRolagem } from '@/components/Screen';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
@@ -36,6 +38,16 @@ export default function PersonalizarScreen() {
 
   return (
     <Screen scroll={false} maxWidth={1200} style={styles.tela}>
+      {/* Virou aba, então perdeu o cabeçalho da pilha: o título vem pra cá,
+          no mesmo formato do Catálogo, com o mesmo nome da aba. */}
+      <View style={styles.cabecalho}>
+        <View style={styles.cabecalhoTitulo}>
+          <BotaoVoltar />
+          <ThemedText type="subtitle">Personalizar</ThemedText>
+        </View>
+        <CartButton />
+      </View>
+
       <View style={[styles.explicacao, { backgroundColor: theme.backgroundElement }]}>
         <View style={[styles.icone, { backgroundColor: theme.primary }]}>
           <Ionicons name="sparkles" size={20} color={theme.primaryText} />
@@ -110,6 +122,12 @@ export default function PersonalizarScreen() {
 
 const styles = StyleSheet.create({
   tela: { gap: Spacing.three },
+  cabecalho: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cabecalhoTitulo: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   explicacao: {
     flexDirection: 'row',
     alignItems: 'center',

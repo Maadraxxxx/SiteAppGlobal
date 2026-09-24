@@ -156,10 +156,6 @@ export default function RootLayout() {
               <Stack.Screen name="pedidos" options={{ headerShown: true, title: 'Meus Pedidos' }} />
               <Stack.Screen name="pedido/[id]" options={{ headerShown: true, title: 'Pedido' }} />
               <Stack.Screen name="enderecos" options={{ headerShown: true, title: 'Meus Endereços' }} />
-              <Stack.Screen
-                name="personalizar"
-                options={{ headerShown: true, title: 'Personalizar com IA' }}
-              />
               <Stack.Screen name="suporte/index" options={{ headerShown: true, title: 'Suporte' }} />
               <Stack.Screen
                 name="suporte/novo"
