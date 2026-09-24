@@ -1,14 +1,14 @@
 {
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/produto/:id", "destination": "/produto/[id].html" },
-    { "source": "/pedido/:id", "destination": "/pedido/[id].html" },
-    { "source": "/pagamento/:id", "destination": "/pagamento/[id].html" },
-    { "source": "/rastreio/:id", "destination": "/rastreio/[id].html" },
-    { "source": "/suporte/:id", "destination": "/suporte/[id].html" },
-    { "source": "/admin/produtos/:id", "destination": "/admin/produtos/[id].html" },
-    { "source": "/admin/chamados/:id", "destination": "/admin/chamados/[id].html" },
-    { "source": "/admin/etiqueta/:id", "destination": "/admin/etiqueta/[id].html" },
-    { "source": "/:path*", "destination": "/+not-found.html" }
+    { "source": "/produto/:id", "destination": "/produto/[id]" },
+    { "source": "/pedido/:id", "destination": "/pedido/[id]" },
+    { "source": "/pagamento/:id", "destination": "/pagamento/[id]" },
+    { "source": "/rastreio/:id", "destination": "/rastreio/[id]" },
+    { "source": "/suporte/:id", "destination": "/suporte/[id]" },
+    { "source": "/admin/produtos/:id", "destination": "/admin/produtos/[id]" },
+    { "source": "/admin/chamados/:id", "destination": "/admin/chamados/[id]" },
+    { "source": "/admin/etiqueta/:id", "destination": "/admin/etiqueta/[id]" },
+    { "source": "/:path*", "destination": "/+not-found" }
   ]
 }
