@@ -19,6 +19,7 @@ import iaRoutes from './modules/ia/routes';
 import pagamentosRoutes from './modules/pagamentos/routes';
 import pedidosRoutes from './modules/pedidos/routes';
 import produtosRoutes from './modules/produtos/routes';
+import pulsoRoutes from './modules/pulso/routes';
 import uploadsRoutes from './modules/uploads/routes';
 import usuariosRoutes from './modules/usuarios/routes';
 
@@ -80,6 +81,7 @@ export function buildApp() {
       api.register(pagamentosRoutes);
       api.register(pedidosRoutes);
       api.register(produtosRoutes);
+      api.register(pulsoRoutes);
       api.register(uploadsRoutes);
       api.register(usuariosRoutes);
     },

@@ -9,5 +9,11 @@
   ],
   "regions": [
     "gru1"
+  ],
+  "crons": [
+    {
+      "path": "/api/pulso",
+      "schedule": "0 9 * * *"
+    }
   ]
 }
