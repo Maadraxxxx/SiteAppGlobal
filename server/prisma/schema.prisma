@@ -69,12 +69,22 @@ model Usuario {
   // Identificador do Google (claim 'sub'), pra reconhecer a conta mesmo se o
   // cliente trocar o e-mail depois.
   googleId   String?  @unique
+  // Identificador da Apple (claim 'sub'). E por equipe de desenvolvedor: o
+  // mesmo cliente tem outro valor em qualquer app que nao seja o nosso.
+  appleId    String?  @unique
+  // A Apple exige revogar o acesso quando a conta e excluida, e a revogacao
+  // so aceita este token — que ela entrega uma vez, no primeiro login.
+  appleRefreshToken String?
   avatarUrl  String?
   role       Role     @default(CLIENTE)
   // Geracoes de imagem compradas e ainda nao usadas (alem das gratuitas do dia)
   creditosIA Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  /// Preenchido quando o cliente exclui a conta. A linha fica, sem nenhum
+  /// dado pessoal, porque os pedidos dele apontam pra ca e precisam continuar
+  /// existindo pra contabilidade. Conta com isto preenchido nao entra mais.
+  excluidaEm DateTime?
 
   pedidos          Pedido[]
   kitsCustomizados KitCustomizado[]

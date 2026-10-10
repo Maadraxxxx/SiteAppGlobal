@@ -63,9 +63,10 @@ export async function reservarGeracao(usuarioId: string): Promise<{ paga: boolea
   });
 
   if (debitou.count === 0) {
-    throw badRequest(
-      `Você já usou suas ${env.IA_GRATIS_POR_DIA} gerações de hoje. Compre créditos para continuar.`,
-    );
+    // Sem falar em comprar: no app do iPhone a Apple não deixa oferecer
+    // compra por fora da loja dela. Quem pode vender crédito é a tela, que
+    // sabe em que aparelho está — a mensagem daqui serve pra todos.
+    throw badRequest(`Você já usou suas ${env.IA_GRATIS_POR_DIA} gerações gratuitas de hoje.`);
   }
 
   return { paga: true };

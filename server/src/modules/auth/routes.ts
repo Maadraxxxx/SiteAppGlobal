@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { verificarIdentityToken } from '../../lib/apple-auth';
 import { verificarIdToken } from '../../lib/google-auth';
 import { authenticate } from '../../middleware/auth';
 import * as authService from './service';
@@ -21,6 +22,14 @@ const updatePerfilSchema = z.object({
 });
 
 const googleSchema = z.object({ idToken: z.string().min(20) });
+
+const appleSchema = z.object({
+  identityToken: z.string().min(20),
+  // Os dois abaixo só vêm quando a Apple entrega: o código em todo login, o
+  // nome apenas na primeira autorização.
+  authorizationCode: z.string().min(1).optional(),
+  nome: z.string().trim().max(120).optional(),
+});
 
 // senhaAtual vazia e permitida: conta criada pelo Google ainda nao tem senha.
 const updateSenhaSchema = z.object({
@@ -89,6 +98,28 @@ export default async function authRoutes(app: FastifyInstance) {
     return reply.send({ token, usuario: authService.toPublicUsuario(usuario) });
   });
 
+  app.post('/apple', async (request, reply) => {
+    const { identityToken, authorizationCode, nome } = appleSchema.parse(request.body);
+    const perfil = await verificarIdentityToken(identityToken);
+    const usuario = await authService.loginComApple({ appleId: perfil.appleId, email: perfil.email, nome });
+
+    // Sem isto o login funciona igual; o que se perde é poder avisar a Apple
+    // quando a conta for excluída. Por isso o erro vai pro log e não pro cliente.
+    if (authorizationCode && !usuario.appleRefreshToken) {
+      try {
+        await authService.guardarRefreshTokenApple(usuario.id, authorizationCode, perfil.audiencia);
+      } catch (erro) {
+        request.log.error(
+          { motivo: erro instanceof Error ? erro.message : String(erro) },
+          'Falha ao guardar o token de revogacao da Apple',
+        );
+      }
+    }
+
+    const token = app.jwt.sign({ sub: usuario.id, role: usuario.role });
+    return reply.send({ token, usuario: authService.toPublicUsuario(usuario) });
+  });
+
   app.get('/me', { preHandler: authenticate }, async (request, reply) => {
     const usuario = await authService.findUsuarioById(request.user.sub);
     return reply.send({ usuario: authService.toPublicUsuario(usuario) });
@@ -98,6 +129,11 @@ export default async function authRoutes(app: FastifyInstance) {
     const { nome, email } = updatePerfilSchema.parse(request.body);
     const usuario = await authService.updatePerfil(request.user.sub, nome, email);
     return reply.send({ usuario: authService.toPublicUsuario(usuario) });
+  });
+
+  app.delete('/me', { preHandler: authenticate }, async (request, reply) => {
+    await authService.excluirConta(request.user.sub);
+    return reply.code(204).send();
   });
 
   app.put('/me/senha', { preHandler: authenticate }, async (request, reply) => {

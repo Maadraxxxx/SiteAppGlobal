@@ -22,14 +22,19 @@ export async function listUsuarios(filters: ListUsuariosFilters) {
   const page = filters.page && filters.page > 0 ? filters.page : 1;
   const pageSize = filters.pageSize && filters.pageSize > 0 ? Math.min(filters.pageSize, 50) : 20;
 
-  const where: Prisma.UsuarioWhereInput = filters.search
-    ? {
-        OR: [
-          { nome: { contains: filters.search, mode: 'insensitive' } },
-          { email: { contains: filters.search, mode: 'insensitive' } },
-        ],
-      }
-    : {};
+  const where: Prisma.UsuarioWhereInput = {
+    // Conta excluída continua no banco só pra segurar os pedidos antigos. Na
+    // lista ela seria uma fila de "Conta excluída" sem nada pra fazer com elas.
+    excluidaEm: null,
+    ...(filters.search
+      ? {
+          OR: [
+            { nome: { contains: filters.search, mode: 'insensitive' } },
+            { email: { contains: filters.search, mode: 'insensitive' } },
+          ],
+        }
+      : {}),
+  };
 
   const [items, total] = await Promise.all([
     prisma.usuario.findMany({

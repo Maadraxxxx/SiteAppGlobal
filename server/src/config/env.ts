@@ -74,6 +74,18 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID_IOS: z.string().optional(),
   GOOGLE_CLIENT_ID_ANDROID: z.string().optional(),
 
+  // Entrar com Apple. O token so e aceito se tiver sido emitido pra um destes
+  // apps — em producao, so o nosso. Pra testar pelo Expo Go num servidor local,
+  // acrescente "host.exp.Exponent" separado por virgula; nunca em producao,
+  // porque isso aceitaria login feito em qualquer projeto aberto no Expo Go.
+  APPLE_CLIENT_IDS: z.string().default('com.globaldecora.app'),
+  // Chave do painel de desenvolvedor da Apple (Keys > Sign in with Apple). So
+  // serve pra avisar a Apple quando uma conta e excluida, que e exigencia da
+  // App Store. Sem as tres, o login funciona e a revogacao e pulada.
+  APPLE_TEAM_ID: z.string().optional(),
+  APPLE_KEY_ID: z.string().optional(),
+  APPLE_PRIVATE_KEY: z.string().optional(),
+
   // Gerador de imagem: quantas o cliente ganha por dia e quanto custa cada
   // uma depois disso. Ficam aqui pra dar pra ajustar sem mexer no código.
   IA_GRATIS_POR_DIA: z.coerce.number().int().min(0).default(2),

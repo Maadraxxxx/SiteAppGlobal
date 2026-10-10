@@ -114,3 +114,33 @@ export async function criarUrlDeEnvio(filename: string) {
     urlPublica: `${env.SUPA_URL}/storage/v1/object/public/${BUCKET}/${path}`,
   };
 }
+
+/**
+ * Apaga arquivos do armazenamento a partir das URLs publicas deles.
+ *
+ * Existe pela exclusao de conta: o bucket e publico, entao apagar so o
+ * registro no banco deixaria a imagem no ar pra quem tivesse o endereco.
+ * URL que nao e deste bucket e ignorada em vez de dar erro — quem chama passa
+ * o que tem, sem precisar saber de onde cada arquivo veio.
+ */
+export async function removerArquivos(urls: string[]) {
+  if (!env.SUPA_URL || !env.SUPA_SERVICE_ROLE_KEY) return;
+
+  const prefixo = `${env.SUPA_URL}/storage/v1/object/public/${BUCKET}/`;
+  const caminhos = urls.filter((url) => url.startsWith(prefixo)).map((url) => url.slice(prefixo.length));
+  if (!caminhos.length) return;
+
+  const res = await fetch(`${env.SUPA_URL}/storage/v1/object/${BUCKET}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${env.SUPA_SERVICE_ROLE_KEY}`,
+      apikey: env.SUPA_SERVICE_ROLE_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ prefixes: caminhos }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Falha ao apagar arquivos: ${res.status} ${await res.text()}`);
+  }
+}

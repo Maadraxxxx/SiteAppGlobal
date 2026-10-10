@@ -1,9 +1,11 @@
 import { createHash, randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { env } from '../../config/env';
+import { revogacaoConfigurada, revogarAcesso, trocarCodigoPorRefreshToken } from '../../lib/apple-auth';
 import { enviarEmail, moldeRecuperacao } from '../../lib/email';
+import { removerArquivos } from '../../lib/supabase-storage';
 import { prisma } from '../../db/prisma';
-import { badRequest, notFound, unauthorized } from '../../lib/http-error';
+import { badRequest, conflict, notFound, unauthorized } from '../../lib/http-error';
 
 export async function registerCliente(nome: string, email: string, senha: string) {
   const existing = await prisma.usuario.findUnique({ where: { email } });
@@ -25,10 +27,16 @@ export async function login(email: string, senha: string) {
     throw unauthorized('Email ou senha invalidos');
   }
 
-  // Conta criada pelo Google não tem senha — avisa o caminho certo em vez de
-  // deixar a pessoa tentando adivinhar uma senha que nunca existiu.
+  // Conta criada pelo Google ou pela Apple não tem senha — avisa o caminho
+  // certo em vez de deixar a pessoa tentando adivinhar uma senha que nunca
+  // existiu.
   if (!usuario.senhaHash) {
-    throw unauthorized('Essa conta entra com o Google. Use o botao "Entrar com Google".');
+    const botao = usuario.googleId
+      ? usuario.appleId
+        ? '"Entrar com Google" ou "Entrar com a Apple"'
+        : '"Entrar com Google"'
+      : '"Entrar com a Apple"';
+    throw unauthorized(`Essa conta não tem senha. Use o botão ${botao}.`);
   }
 
   const senhaValida = await bcrypt.compare(senha, usuario.senhaHash);
@@ -79,6 +87,158 @@ export async function loginComGoogle(perfil: {
       role: 'CLIENTE',
     },
   });
+}
+
+/**
+ * Entra (ou cria a conta) a partir de um token da Apple já verificado.
+ *
+ * Os mesmos três casos do Google, com duas diferenças que vêm da Apple:
+ *  - o nome não vem no token. O app só o recebe na primeira autorização e
+ *    repassa; nas seguintes não vem nada, e por isso nunca é atualizado aqui;
+ *  - o e-mail pode faltar (conta Apple gerenciada por escola ou empresa). A
+ *    conta nasce com um endereço de marcação, que a pessoa troca no perfil.
+ */
+export async function loginComApple(perfil: { appleId: string; email?: string; nome?: string }) {
+  const porAppleId = await prisma.usuario.findUnique({ where: { appleId: perfil.appleId } });
+  if (porAppleId) return porAppleId;
+
+  if (perfil.email) {
+    const porEmail = await prisma.usuario.findUnique({ where: { email: perfil.email } });
+    if (porEmail) {
+      return prisma.usuario.update({ where: { id: porEmail.id }, data: { appleId: perfil.appleId } });
+    }
+  }
+
+  return prisma.usuario.create({
+    data: {
+      nome: perfil.nome?.trim() || 'Cliente',
+      email: perfil.email ?? `${perfil.appleId}@sem-email.apple.invalid`,
+      appleId: perfil.appleId,
+      role: 'CLIENTE',
+    },
+  });
+}
+
+/**
+ * Guarda o token que a revogação da Apple vai pedir no dia em que a conta for
+ * excluída. Só dá pra obtê-lo agora, com o código que veio junto do login.
+ */
+export async function guardarRefreshTokenApple(usuarioId: string, authorizationCode: string, clientId: string) {
+  const refreshToken = await trocarCodigoPorRefreshToken(authorizationCode, clientId);
+  if (!refreshToken) return;
+  await prisma.usuario.update({ where: { id: usuarioId }, data: { appleRefreshToken: refreshToken } });
+}
+
+/**
+ * Exclui a conta a pedido do próprio cliente.
+ *
+ * O que some: tudo que identifica a pessoa — nome, e-mail, senha, vínculos com
+ * Google e Apple, endereços (com o CPF), conversas de suporte, artes geradas
+ * que não viraram pedido, e os pedidos que nunca foram pagos.
+ *
+ * O que fica: os pedidos pagos, com itens, valores e endereço de entrega. São
+ * o registro de venda da loja, que a lei manda guardar; o cliente deixar a
+ * loja não desfaz a venda. Eles continuam apontando pra esta linha, que por
+ * isso não é apagada — vira uma casca sem dado pessoal nenhum, marcada com
+ * `excluidaEm`.
+ *
+ * Duas recusas:
+ *  - pedido pago que ainda não foi enviado. A etiqueta sai do nome e do CPF do
+ *    cadastro; apagar agora deixaria a loja com um pedido pago que não tem
+ *    como despachar. Depois do envio o cadastro não é mais necessário;
+ *  - administrador. Um painel sem admin não se conserta sozinho, e essa trava
+ *    já existe na troca de cargo — aqui ela só não pode ser contornada.
+ */
+export async function excluirConta(usuarioId: string) {
+  const usuario = await findUsuarioById(usuarioId);
+
+  if (usuario.role === 'ADMIN') {
+    throw badRequest(
+      'Contas de administrador não podem ser excluídas por aqui. Peça a outro administrador para remover o seu cargo primeiro.',
+    );
+  }
+
+  const aEnviar = await prisma.pedido.count({
+    where: {
+      usuarioId,
+      statusPagamento: 'PAGO',
+      statusProducao: { in: ['AGUARDANDO', 'EM_PRODUCAO'] },
+    },
+  });
+  if (aEnviar) {
+    throw conflict(
+      aEnviar === 1
+        ? 'Você tem um pedido pago que ainda não foi enviado. Precisamos dos seus dados para a entrega — a conta pode ser excluída assim que ele for despachado.'
+        : `Você tem ${aEnviar} pedidos pagos que ainda não foram enviados. Precisamos dos seus dados para a entrega — a conta pode ser excluída assim que eles forem despachados.`,
+    );
+  }
+
+  // A Apple primeiro, enquanto o token ainda existe. Falha aqui não impede a
+  // exclusão: o que o cliente pediu foi apagar os dados dele, e isso não pode
+  // depender de um serviço de fora estar no ar.
+  if (usuario.appleRefreshToken && revogacaoConfigurada()) {
+    try {
+      await revogarAcesso(usuario.appleRefreshToken);
+    } catch (erro) {
+      console.error('[auth] revogacao da Apple falhou:', erro instanceof Error ? erro.message : erro);
+    }
+  }
+
+  // Mesmo critério da limpeza automática: só sai o pedido que nunca teve
+  // pagamento aprovado.
+  const naoPagos = await prisma.pedido.findMany({
+    where: {
+      usuarioId,
+      statusPagamento: { in: ['AGUARDANDO', 'CANCELADO'] },
+      pagamentos: { none: { status: 'APROVADO' } },
+    },
+    select: { id: true },
+  });
+  const idsNaoPagos = naoPagos.map((pedido) => pedido.id);
+
+  // Arte que está num pedido que fica também fica: é o que foi produzido.
+  const artesSoltas = await prisma.geracaoImagem.findMany({
+    where: { usuarioId, itensPedido: { none: { pedidoId: { notIn: idsNaoPagos } } } },
+    select: { id: true, imagemUrl: true },
+  });
+
+  // Tudo junto: metade de uma exclusão é pior que nenhuma. Os filhos vão
+  // antes dos pais porque as relações de pedido não têm cascata.
+  await prisma.$transaction([
+    prisma.pagamento.deleteMany({ where: { pedidoId: { in: idsNaoPagos } } }),
+    prisma.itemPedido.deleteMany({ where: { pedidoId: { in: idsNaoPagos } } }),
+    prisma.chamado.deleteMany({ where: { usuarioId } }),
+    prisma.pedido.deleteMany({ where: { id: { in: idsNaoPagos } } }),
+    prisma.geracaoImagem.deleteMany({ where: { id: { in: artesSoltas.map((arte) => arte.id) } } }),
+    prisma.kitCustomizado.deleteMany({ where: { usuarioId, itemPedido: { is: null } } }),
+    prisma.compraCreditoIA.deleteMany({ where: { usuarioId, status: { not: 'APROVADO' } } }),
+    prisma.endereco.deleteMany({ where: { usuarioId } }),
+    prisma.tokenSenha.deleteMany({ where: { usuarioId } }),
+    prisma.usuario.update({
+      where: { id: usuarioId },
+      data: {
+        nome: 'Conta excluída',
+        // O e-mail é único e obrigatório. Este não existe, não recebe nada, e
+        // deixa o endereço de verdade livre pra pessoa criar conta de novo.
+        email: `conta-excluida-${usuarioId}@excluida.invalid`,
+        senhaHash: null,
+        googleId: null,
+        appleId: null,
+        appleRefreshToken: null,
+        avatarUrl: null,
+        creditosIA: 0,
+        excluidaEm: new Date(),
+      },
+    }),
+  ]);
+
+  // Depois, e fora da transação: o banco já está certo, e arquivo que sobrar
+  // não tem mais nada apontando pra ele.
+  try {
+    await removerArquivos(artesSoltas.map((arte) => arte.imagemUrl));
+  } catch (erro) {
+    console.error('[auth] sobra de arquivo na exclusao de conta:', erro instanceof Error ? erro.message : erro);
+  }
 }
 
 export async function findUsuarioById(id: string) {
