@@ -16,7 +16,14 @@ export const authApi = {
   google: (idToken: string) =>
     apiRequest<AuthResponse>('/auth/google', { method: 'POST', body: { idToken } }),
 
+  /** `nome` e `authorizationCode` só existem quando a Apple entrega — o nome, só na primeira vez. */
+  apple: (dados: { identityToken: string; authorizationCode?: string; nome?: string }) =>
+    apiRequest<AuthResponse>('/auth/apple', { method: 'POST', body: dados }),
+
   me: () => apiRequest<{ usuario: Usuario }>('/auth/me'),
+
+  /** Sem volta. O servidor recusa enquanto houver pedido pago que ainda não foi enviado. */
+  excluirConta: () => apiRequest<void>('/auth/me', { method: 'DELETE' }),
 
   updatePerfil: (nome: string, email: string) =>
     apiRequest<{ usuario: Usuario }>('/auth/me', { method: 'PUT', body: { nome, email } }),

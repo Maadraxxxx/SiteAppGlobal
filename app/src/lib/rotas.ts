@@ -17,6 +17,9 @@ export const ROTAS = {
   /** Aba da IA: so os produtos base, sem estampa. */
   personalizar: '/personalizar' as Href,
   suporte: '/suporte' as Href,
+  /** Pública, sem login: é o endereço informado à App Store. */
+  privacidade: '/privacidade' as Href,
+  excluirConta: '/excluir-conta' as Href,
   suporteNovo: '/suporte/novo' as Href,
   chamado: (id: string) => `/suporte/${id}` as Href,
   adminChamados: '/admin/chamados' as Href,

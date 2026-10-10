@@ -23,6 +23,9 @@ export const googleDisponivel = !!(CLIENT_IDS.web || CLIENT_IDS.ios || CLIENT_ID
  * Casca que decide se o botão existe. O hook do Google lança se nenhum client
  * ID estiver configurado, e hook não pode ficar dentro de `if` — por isso ele
  * vive no componente de dentro, que só monta quando há configuração.
+ *
+ * O "ou" que separa do formulário fica no LoginSocial, que junta este botão
+ * com o da Apple.
  */
 export function GoogleButton(props: { onSucesso: () => void }) {
   if (!googleDisponivel) return null;
@@ -73,14 +76,6 @@ function BotaoGoogle({ onSucesso }: { onSucesso: () => void }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.divisor}>
-        <View style={[styles.linha, { backgroundColor: theme.border }]} />
-        <ThemedText type="small" themeColor="textSecondary">
-          ou
-        </ThemedText>
-        <View style={[styles.linha, { backgroundColor: theme.border }]} />
-      </View>
-
       <Pressable
         disabled={!request || entrando}
         onPress={() => {
@@ -142,15 +137,6 @@ function GoogleG({ tamanho = 18 }: { tamanho?: number }) {
 const styles = StyleSheet.create({
   container: {
     gap: Spacing.three,
-  },
-  divisor: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-  },
-  linha: {
-    flex: 1,
-    height: 1,
   },
   botao: {
     flexDirection: 'row',

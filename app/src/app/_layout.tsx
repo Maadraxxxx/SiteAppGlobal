@@ -166,6 +166,10 @@ export default function RootLayout() {
               <Stack.Screen name="rastreio/[id]" options={{ headerShown: true, title: 'Rastreamento' }} />
               <Stack.Screen name="pagamento/[id]" options={{ headerShown: true, title: 'Pagamento' }} />
               <Stack.Screen name="editar-perfil" options={{ headerShown: true, title: 'Editar Perfil' }} />
+              <Stack.Screen name="excluir-conta" options={{ headerShown: true, title: 'Excluir conta' }} />
+              {/* Sem título na barra: a página já abre com o dela, e repetir
+                  empurraria o texto pra baixo. */}
+              <Stack.Screen name="privacidade" options={{ headerShown: true, title: '' }} />
               <Stack.Screen name="admin" />
               <Stack.Screen name="+not-found" />
             </Stack>

@@ -129,6 +129,13 @@ export default function PerfilScreen() {
           </View>
         </View>
 
+        {/* Também pra quem não entrou: dá pra ler antes de decidir criar conta. */}
+        <Pressable onPress={() => router.push(ROTAS.privacidade)} hitSlop={8} style={styles.linkPrivacidade}>
+          <ThemedText type="small" themeColor="primary">
+            Política de Privacidade
+          </ThemedText>
+        </Pressable>
+
         <Rodape />
       </Screen>
     );
@@ -188,6 +195,21 @@ export default function PerfilScreen() {
           label="Suporte"
           descricao="Fale com a loja sobre um pedido ou dúvida"
           onPress={() => router.push(ROTAS.suporte)}
+        />
+      </MenuGroup>
+
+      <MenuGroup titulo="Privacidade">
+        <MenuRow
+          icon="shield-checkmark-outline"
+          label="Política de Privacidade"
+          descricao="Como usamos seus dados"
+          onPress={() => router.push(ROTAS.privacidade)}
+        />
+        <MenuRow
+          icon="trash-outline"
+          label="Excluir minha conta"
+          descricao="Apaga tudo, sem volta"
+          onPress={() => router.push(ROTAS.excluirConta)}
         />
       </MenuGroup>
 
@@ -327,5 +349,8 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: Spacing.two,
     marginTop: Spacing.three,
+  },
+  linkPrivacidade: {
+    alignSelf: 'center',
   },
 });

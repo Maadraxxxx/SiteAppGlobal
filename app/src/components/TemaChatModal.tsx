@@ -25,6 +25,16 @@ import { Button } from './Button';
 import { ThemedText } from './themed-text';
 
 /**
+ * Se este aparelho pode vender crédito de geração.
+ *
+ * No app do iPhone, não: a Apple só permite vender conteúdo digital pela loja
+ * dela, e proíbe até apontar pra outro jeito de pagar. Lá, quando as gerações
+ * grátis do dia acabam, o app só avisa — sem preço, sem botão e sem Pix. No
+ * site e no Android a compra segue normal.
+ */
+const VENDE_CREDITO = Platform.OS !== 'ios';
+
+/**
  * Abertura do chat. As palavras que o cliente precisa responder ficam na cor
  * da marca — num paragrafo corrido elas se perdiam, e a pessoa mandava "quero
  * bonito" em vez de dizer o tema.
@@ -265,8 +275,18 @@ export function TemaChatModal({ visible, onClose, produto }: Props) {
             </View>
           ) : null}
 
+          {/* Acabaram as gerações e aqui não se vende crédito: só avisa. */}
+          {semSaldo && !VENDE_CREDITO ? (
+            <View style={[styles.aviso, { backgroundColor: theme.backgroundSelected }]}>
+              <ThemedText type="smallBold">Suas gerações de hoje acabaram</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                Você tem {saldo?.gratuitasPorDia} grátis por dia. Volte amanhã para criar mais.
+              </ThemedText>
+            </View>
+          ) : null}
+
           {/* Acabaram as gerações: oferece a compra ali mesmo */}
-          {semSaldo && !compra ? (
+          {semSaldo && VENDE_CREDITO && !compra ? (
             <View style={[styles.aviso, { backgroundColor: theme.backgroundSelected }]}>
               <ThemedText type="smallBold">Suas gerações de hoje acabaram</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">

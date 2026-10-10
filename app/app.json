@@ -11,8 +11,10 @@
       "bundleIdentifier": "com.globaldecora.app",
       "supportsTablet": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleAllowMixedLocalizations": true
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "adaptiveIcon": {
@@ -43,15 +45,17 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "O Global Decora usa suas fotos para você escolher a imagem do produto.",
-          "cameraPermission": "O Global Decora usa a câmera para você fotografar o produto."
+          "photosPermission": "A equipe da loja usa as fotos do aparelho para cadastrar as imagens dos produtos.",
+          "cameraPermission": false,
+          "microphonePermission": false
         }
       ],
       "expo-video",
       "expo-font",
       "expo-web-browser",
       "expo-image",
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true,

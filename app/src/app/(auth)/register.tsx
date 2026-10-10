@@ -1,12 +1,13 @@
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { Button } from '@/components/Button';
-import { GoogleButton } from '@/components/GoogleButton';
+import { LoginSocial } from '@/components/LoginSocial';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { ROTAS } from '@/lib/rotas';
 
 const MIN_SENHA = 6;
 
@@ -102,7 +103,20 @@ export default function RegisterScreen() {
 
       <Button title="Criar conta" onPress={handleSubmit} loading={loading} />
 
-      <GoogleButton onSucesso={() => router.replace('/(tabs)/perfil')} />
+      {/* Antes de qualquer jeito de criar a conta, inclusive os botões de
+          baixo: a pessoa precisa poder ler o que acontece com os dados dela
+          antes de entregá-los. */}
+      <ThemedText type="small" themeColor="textSecondary" style={{ textAlign: 'center' }}>
+        Ao criar a conta, você concorda com a nossa{' '}
+        <Link href={ROTAS.privacidade}>
+          <ThemedText type="small" themeColor="primary">
+            Política de Privacidade
+          </ThemedText>
+        </Link>
+        .
+      </ThemedText>
+
+      <LoginSocial onSucesso={() => router.replace('/(tabs)/perfil')} />
       <Link href="/(auth)/login">
         <ThemedText type="link" themeColor="primary">
           Já tem conta? Entrar

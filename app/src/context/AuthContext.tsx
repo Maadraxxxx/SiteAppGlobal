@@ -9,7 +9,10 @@ interface AuthContextValue {
   login: (email: string, senha: string) => Promise<void>;
   register: (nome: string, email: string, senha: string) => Promise<void>;
   loginComGoogle: (idToken: string) => Promise<void>;
+  loginComApple: (dados: { identityToken: string; authorizationCode?: string; nome?: string }) => Promise<void>;
   logout: () => Promise<void>;
+  /** Apaga a conta no servidor e encerra a sessão neste aparelho. */
+  excluirConta: () => Promise<void>;
   atualizarUsuario: (usuario: Usuario) => void;
 }
 
@@ -58,13 +61,37 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setUsuario(usuario);
   }
 
+  async function loginComApple(dados: { identityToken: string; authorizationCode?: string; nome?: string }) {
+    const { token, usuario } = await authApi.apple(dados);
+    await tokenStorage.set(token);
+    setUsuario(usuario);
+  }
+
   async function logout() {
     await tokenStorage.clear();
     setUsuario(null);
   }
 
+  async function excluirConta() {
+    // Se o servidor recusar, o erro sobe e a sessão continua de pé: a conta
+    // não foi apagada, então a pessoa precisa seguir logada pra resolver.
+    await authApi.excluirConta();
+    await tokenStorage.clear();
+    setUsuario(null);
+  }
+
   return (
-    <AuthContext.Provider value={{ usuario, isLoading, login, register, loginComGoogle, logout, atualizarUsuario: setUsuario }}>
+    <AuthContext.Provider value={{
+        usuario,
+        isLoading,
+        login,
+        register,
+        loginComGoogle,
+        loginComApple,
+        logout,
+        excluirConta,
+        atualizarUsuario: setUsuario,
+      }}>
       {children}
     </AuthContext.Provider>
   );

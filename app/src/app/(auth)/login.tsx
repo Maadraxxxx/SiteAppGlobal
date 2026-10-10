@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { Button } from '@/components/Button';
-import { GoogleButton } from '@/components/GoogleButton';
+import { LoginSocial } from '@/components/LoginSocial';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { ThemedText } from '@/components/themed-text';
@@ -54,7 +54,7 @@ export default function LoginScreen() {
         </ThemedText>
       </Link>
 
-      <GoogleButton onSucesso={() => router.replace('/(tabs)/perfil')} />
+      <LoginSocial onSucesso={() => router.replace('/(tabs)/perfil')} />
       <Link href="/(auth)/register">
         <ThemedText type="link" themeColor="primary">
           Ainda não tem conta? Criar conta
